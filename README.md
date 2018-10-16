@@ -6,8 +6,8 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 
 ## To-do
 
-#### First release
-Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+### First release
+#### Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
 - [ ] Get historical transaction data for Bitcoin.
 - [ ] Get Google Trends data.
 - [ ] Import data into database.
@@ -16,22 +16,22 @@ Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-
 - [ ] Use Django to create API.
 - [ ] Write api docs and publish.
 
-#### Second release
-Goal: live model and optimize the parameters
+### Second release
+#### Goal: live model and optimize the parameters
 - [ ] Get live transactional and order book data.
 - [ ] Implement live data into current database.
 - [ ] Use graphical analysis to see how well the buy/sell recommendations are with existing model.
 - [ ] Include open, high, low, close trending.
 - [ ] Regression testing (?) to modify parameters.
 
-#### Third release
-Goal: refine model
+### Third release
+#### Goal: refine model
 - [ ] What other variables could play a part in Bitcoin price?
 
 
 
 
-### Contribute
+## Contribute
 
 - Issue Tracker: https://github.com/lauramayol/crypto_signal/issues
 - Source Code: https://github.com/lauramayol/crypto_signal
