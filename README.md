@@ -21,7 +21,7 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [ ] Get live transactional and order book data.
 - [ ] Implement live data into current database.
 - [ ] Use graphical analysis to see how well the buy/sell recommendations are with existing model.
-- [ ] Include open, high, low, close trending.
+- [ ] Incorporate OHLCV (open, high, low, close,volume).
 - [ ] Regression testing (?) to modify parameters.
 
 ### 3.0 release
