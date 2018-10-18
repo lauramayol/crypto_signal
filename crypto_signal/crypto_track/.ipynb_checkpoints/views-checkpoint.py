@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import requests
 import os
-from crypto_track.models import CryptoCandle
-import datetime
+from crypto_track.models import CryptoCandle, PyTrends
+from datetime import datetime
 from crypto_track.trends import CryptoTrends
 
 # GET localhost:8000/load/nomics?currency=BTC
@@ -53,7 +53,7 @@ def load_nomics(request):
                 db_record.save()
                 x += 1
         return JsonResponse({"status_code": 202, "status": "Accepted",
-                             "message": f"Inserted {x} records on {datetime.datetime.now()}."}
+                             "message": f"Inserted {x} records on {datetime.now()}."}
                             )
 
 
@@ -75,29 +75,3 @@ def load_ccxt(request):
 
 
 def load_trends(request):
-    '''
-        Used to populate PyTrends model.
-    '''
-    my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
-
-    end_date = datetime.datetime.now().date()
-    start_date = end_date - datetime.timedelta(days=180)
-
-    # Iterate over a 6 month period because model will aggregate the dates to weekly summary if we try to pull a longer timespan.
-    while end_date.year >= 2013:
-        # We do not need any data before 2013, this is how far our historical data for bitcoin spans.
-        if start_date < datetime.date(2013, 1, 1):
-            start_date = datetime.date(2013, 1, 1)
-        # try:  # Load google trend data into database.
-        status_message = my_trend.load_model(f"{start_date} {end_date}")
-        # except Exception as exc:
-        #     return JsonResponse({"status_code": 409,
-        #                          "status": "Conflict",
-        #                          "type": type(exc).__name__,
-        #                          "message": exc.__str__()})
-        # else:
-        # re-assign start and end dates to shift 6 months backwards.
-        end_date = start_date - datetime.timedelta(days=1)
-        start_date = start_date - datetime.timedelta(days=180)
-
-    return JsonResponse({"status_code": 202, "status": status_message})

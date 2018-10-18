@@ -7,7 +7,8 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ## To-do
 
 ### 1.0 release
-#### Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+##### Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+
 - [ ] Get historical transaction data for Bitcoin.
 - [ ] Get Google Trends data.
 - [ ] Import data into database.
@@ -17,7 +18,7 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [ ] Write api docs and publish.
 
 ### 2.0 release
-#### Goal: live model and optimize the parameters
+##### Goal: live model and optimize the parameters
 - [ ] Get live transactional and order book data.
 - [ ] Implement live data into current database.
 - [ ] Use graphical analysis to see how well the buy/sell recommendations are with existing model.
@@ -25,7 +26,7 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [ ] Regression testing (?) to modify parameters.
 
 ### 3.0 release
-#### Goal: refine model
+##### Goal: refine model
 - [ ] What other variables could play a part in Bitcoin price?
 
 

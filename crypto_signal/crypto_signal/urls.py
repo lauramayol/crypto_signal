@@ -15,7 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from crypto_track import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('load/nomics', views.load_nomics, name='load_nomics'),
+    path('load/kaggle', views.load_kaggle, name='load_kaggle'),
+    path('load/ccxt', views.load_ccxt, name='load_ccxt'),
+    path('load/trends', views.load_trends, name='load_trends'),
 ]
