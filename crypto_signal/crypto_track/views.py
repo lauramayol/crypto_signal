@@ -1,15 +1,43 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import requests
+import json
 import os
 from crypto_track.models import CryptoCandle
 import datetime
 from crypto_track.trends import CryptoTrends
+from crypto_track.signal import Signal
 
-# GET localhost:8000/load/nomics?currency=BTC
+
+def signal(request):
+    '''
+        # example request: GET localhost:8000/signal?currency=BTC&date=yyyy-mm-dd
+
+        Variables:
+        user_input (str) = date of signal
+
+        Return value:
+        Returns buy or sell of bitcoin for given currency and date. If no date is given, latest available is returned.
+    '''
+    try:
+        # Get queries from request
+        user_currency = request.GET.get('currency', '')
+        user_date = request.GET.get('date', '')
+
+        search_date = datetime.datetime.strptime(user_date, '%Y-%m-%d')
+        my_signal = Signal()
+        return_message = my_signal.get_signal(user_currency, search_date)
+    except Exception as exc:
+        return JsonResponse({"status_code": 409,
+                             "status": "Conflict",
+                             "type": type(exc).__name__,
+                             "message": exc.__str__()})
+    else:
+        return JsonResponse(return_message)
 
 
 def load_nomics(request):
+    # example request: GET localhost:8000/load/nomics?currency=BTC
     api_key = os.environ["NOMICS_API_KEY"]
     candle_url = "https://api.nomics.com/v1/candles"
     interval = "1d"

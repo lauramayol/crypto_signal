@@ -5,14 +5,14 @@ from crypto_track.models import PyTrends
 
 class CryptoTrends:
 
-    def __init__(self, text1, text2):
+    def __init__(self, search_val1, search_val2):
         '''
             Attributes:
-            text1 (str): first search string to track using Google Trends
-            text2 (str): second search string to track using Google Trends
+            search_val1 (str): first search string to track using Google Trends
+            search_val2 (str): second search string to track using Google Trends
         '''
-        self.text1 = text1
-        self.text2 = text2
+        self.search_val1 = search_val1
+        self.search_val2 = search_val2
 
     def get_trends(self, period):
         '''
@@ -21,7 +21,7 @@ class CryptoTrends:
             Attributes:
             period (str): the period to evaluate in "Interest Over Time" chart.
         '''
-        kw_list = [self.text1, self.text2]
+        kw_list = [self.search_val1, self.search_val2]
         pytrends = TrendReq(hl='en - US')
         pytrends.build_payload(kw_list, cat=0, timeframe=period, geo='', gprop='')
 
@@ -34,8 +34,8 @@ class CryptoTrends:
         df = self.get_trends(period)
         for index, row in df.iterrows():
             trend_record = PyTrends(date=index,
-                                    buy_bitcoin=row[self.text1],
-                                    btc_usd=row[self.text2],
+                                    buy_bitcoin=row[self.search_val1],
+                                    btc_usd=row[self.search_val2],
                                     is_partial=row['isPartial']
                                     )
             trend_record.save()
