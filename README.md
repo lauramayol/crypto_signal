@@ -23,22 +23,22 @@ Current version is modeled after Marc Howard's blog: https://hackernoon.com/how-
 - [ ] What other variables could play a part in Bitcoin price?
 - [ ] Consider incorporating other variables, OHLCV (open, high, low, close,volume).
 
-### Paths
+### Endpoints
 
-| Location | Path |
+| Location | Endpoint |
 | :-- | :-- |
-| Root path | `~/`|
-| Signal | `~/signal`|
-| Load Bitcoin data | `~/load/nomics`|
-| Load trends data | `~/load/trends`|
+| Root path | `/`|
+| Signal | `/signal`|
+| Load Bitcoin data | `/load/nomics`|
+| Load trends data | `/load/trends`|
 
 ### HTTP request and query methods
 
-| Method | Path | Query | Description | Examples |
+| Method | Endpoint | Query | Description | Examples |
 | :-- | :-- | :-- | :-- | :-- |
-| `GET` | `~/signal` | `?currency=BTC&date=yyyy-mm-dd` | Retrieves the Buy/Sell signal from model in database for given currency (currently only Bitcoin (BTC) available and historical date (Jan 2013-Oct 2018). | `~/signal?currency=BTC&date=2018-08-15` |
-| `GET` | `~/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `~~/load/nomics?currency=BTC&start=2018-01-01` |
-| `GET` | `~/load/trends` | `n/a` | Full load of Google trends Interet Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `~~/load/trends` |
+| `GET` | `/signal` | `?currency=BTC&date=yyyy-mm-dd` | Retrieves the Buy/Sell signal from model in database for given currency (currently only Bitcoin (BTC) available and historical date (Jan 2013-Oct 2018). | `/signal?currency=BTC&date=2018-08-15` |
+| `GET` | `/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `/load/nomics?currency=BTC&start=2018-01-01` |
+| `GET` | `/load/trends` | `n/a` | Full load of Google trends Interest Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends` |
 
 ### Contribute
 
