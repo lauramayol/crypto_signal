@@ -3,7 +3,13 @@
 
 This release provides an API that recommends Buy/Sell of Bitcoin for a given date with intention to maximize profits.
 
-Current version is modeled after Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+Requirements to BUY (based on Marc Howard's blog):
+1. Search terms of “Buy Bitcoin” to “BTC USD” ratio is more than 35%.
+2. BTC price difference closes more than $80 above the prior day’s close price.
+
+Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+
+
 
 ## Features
 
@@ -18,7 +24,7 @@ Current version is modeled after Marc Howard's blog: https://hackernoon.com/how-
 
 #### Next release
 
-- [ ] Switch to SQLite database for easier sharing.
+- [x] Switch to SQLite database for easier sharing.
 - [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
 - [ ] Explore switching to BitMEX source.
 - [ ] Optimize existing parameters (specifically, remove Google Trends parameter and revise BTC price change threshold of $80).
@@ -32,14 +38,17 @@ Current version is modeled after Marc Howard's blog: https://hackernoon.com/how-
 | Signal | `/signal`|
 | Load Bitcoin data | `/load/nomics`|
 | Load trends data | `/load/trends`|
+| Update candles foreign keys | `/update/candles`|
+
 
 ### HTTP request and query methods
 
 | Method | End Point | Query | Description | Examples |
 | :-- | :-- | :-- | :-- | :-- |
 | `GET` | `/signal` | `?currency=BTC&date=yyyy-mm-dd` | Retrieves the Buy/Sell signal from model in database for given currency (currently only Bitcoin (BTC) available and historical date (Jan 2013-Oct 2018). | `/signal?currency=BTC&date=2018-08-15` |
-| `GET` | `/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `/load/nomics?currency=BTC&start=2018-01-01` |
-| `GET` | `/load/trends` | `n/a` | Full load of Google trends Interet Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends` |
+| `POST` | `/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `/load/nomics?currency=BTC&start=2018-01-01` |
+| `POST` | `/load/trends` | `n/a` | Full load of Google trends Interet Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends` |
+| `PATCH` | `/update/candles` | `n/a` | Updates foreign key relationship of candle to trend model.  | `/update/candles` |
 
 ### Contribute
 

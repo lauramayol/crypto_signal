@@ -1,7 +1,9 @@
 
 from django.http import JsonResponse
+from django.utils import timezone
 import datetime
 from crypto_track.trends import CryptoTrends
+from crypto_track.models import CryptoCandle
 from crypto_track.signal import Signal
 from . import crypto_data
 
@@ -17,13 +19,19 @@ def signal(request):
         Return value:
         Returns buy or sell of currency queried for a given date, starting from 2013 up to today. If no date is given, latest available is returned.
     '''
+    # initialize variable
+    search_date = ""
+
     try:
         # Get queries from request
         user_currency = request.GET.get('currency', '')
-        user_date = request.GET.get('date', '')
+        user_date = request.GET.get('date', search_date)
 
-        search_date = datetime.datetime.strptime(user_date, '%Y-%m-%d')
+        if user_date != "":
+            search_date = datetime.datetime.strptime(user_date, '%Y-%m-%d')
+
         my_signal = Signal()
+
         return_message = my_signal.get_signal(user_currency, search_date)
     except Exception as exc:
         return JsonResponse({"status_code": 409,
@@ -35,16 +43,16 @@ def signal(request):
 
 
 def load_nomics(request):
-    # example request: GET localhost:8000/load/nomics?currency=BTC
+    # example request: POST localhost:8000/load/nomics?currency=BTC
     try:
         query_currency = request.GET.get('currency', '')
-        if query_currency == "":
+        if query_currency == "" or request.method != "POST":
             raise Exception()
     except:
         return JsonResponse({"status_code": 400, "status": "Bad Request",
                              "message": "Please submit a valid request."})
     else:
-        return_message = cyrpto_data.get_nomics(request, query_currency)
+        return_message = crypto_data.get_nomics(request, query_currency)
 
     return return_message
 
@@ -59,30 +67,55 @@ def load_ccxt(request):
 
 def load_trends(request):
     '''
-        Used to populate PyTrends model.
+        Used to populate PyTrends model from Google Trend data.
+        sample: POST localhost:8000/load/trends
     '''
-    my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
+    if request.method == "POST":
+        my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
 
-    end_date = datetime.datetime.now().date()
-    start_date = end_date - datetime.timedelta(days=180)
+        end_date = datetime.datetime.now().date()
+        start_date = end_date - datetime.timedelta(days=180)
 
-    # Iterate over a 6 month period because model will aggregate the dates to weekly summary if we try to pull a longer timespan.
-    while end_date.year >= 2013:
-        # We do not need any data before 2013, this is how far our historical data for bitcoin spans.
-        if start_date < datetime.date(2013, 1, 1):
-            start_date = datetime.date(2013, 1, 1)
+        # Iterate over a 6 month period because model will aggregate the dates to weekly summary if we try to pull a longer timespan.
+        while end_date.year >= 2013:
+            # We do not need any data before 2013, this is how far our historical data for bitcoin spans.
+            if start_date < datetime.date(2013, 1, 1):
+                start_date = datetime.date(2013, 1, 1)
 
-        try:
-            # Load google trend data into database.
-            status_message = my_trend.load_model(f"{start_date} {end_date}")
-        except Exception as exc:
-            return JsonResponse({"status_code": 409,
-                                 "status": "Conflict",
-                                 "type": type(exc).__name__,
-                                 "message": exc.__str__()})
-        else:
-            # re-assign start and end dates to shift 6 months backwards.
-            end_date = start_date - datetime.timedelta(days=1)
-            start_date = start_date - datetime.timedelta(days=180)
+            try:
+                # Load google trend data into database.
+                status_message = my_trend.load_model(f"{start_date} {end_date}")
+            except Exception as exc:
+                return JsonResponse({"status_code": 409,
+                                     "status": "Conflict",
+                                     "type": type(exc).__name__,
+                                     "message": exc.__str__()})
+            else:
+                # re-assign start and end dates to shift 6 months backwards.
+                end_date = start_date - datetime.timedelta(days=1)
+                start_date = start_date - datetime.timedelta(days=180)
 
-    return JsonResponse({"status_code": 202, "status": status_message})
+        return JsonResponse({"status_code": 202, "status": status_message})
+    else:
+        return JsonResponse({"status_code": 400, "status": "Bad Request",
+                             "message": "Please submit a valid request."})
+
+
+def update_candles(request):
+    '''
+        Updates search_trend for all candle data. We can use this if we have already loaded candle data but need to update the trend relationship on its own.
+        sample: PATCH localhost:8000/update/candles
+    '''
+    if request.method == "PATCH":
+        x = 0
+        for candle in CryptoCandle.objects.all():
+            find_trend = crypto_data.append_trend_dates(request, candle)
+            if find_trend:
+                x += 1
+
+        return JsonResponse({"status_code": 202, "status": "Accepted",
+                             "message": f"Updated {x} records on {timezone.now()}."}
+                            )
+    else:
+        return JsonResponse({"status_code": 400, "status": "Bad Request",
+                             "message": "Please submit a valid request."})

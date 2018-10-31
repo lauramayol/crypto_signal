@@ -38,5 +38,7 @@ class CryptoTrends:
                                     btc_usd=row[self.search_val2],
                                     is_partial=row['isPartial']
                                     )
+            if abs(trend_record.btc_usd) > 0:
+                trend_record.trend_ratio = trend_record.buy_bitcoin / trend_record.btc_usd
             trend_record.save()
         return "Accepted"

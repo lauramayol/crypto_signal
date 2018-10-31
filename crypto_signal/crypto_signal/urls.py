@@ -24,4 +24,5 @@ urlpatterns = [
     path('load/ccxt', views.load_ccxt, name='load_ccxt'),
     path('load/trends', views.load_trends, name='load_trends'),
     path('signal', views.signal, name='signal'),
+    path('update/candles', views.update_candles, name='update_candles'),
 ]

@@ -1,7 +1,11 @@
 import os
-from crypto_track.models import CryptoCandle
+from crypto_track.models import CryptoCandle, PyTrends
 import requests
 import json
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+import datetime
 
 
 def get_nomics(request, query_currency):
@@ -28,7 +32,12 @@ def get_nomics(request, query_currency):
 
             db_record = CryptoCandle(currency_traded=query_currency,
                                      currency_quoted=currency_quote, period_interval=interval, period_start_timestamp=record['timestamp'],
-                                     period_low=float(record['low']), period_open=float(record['open']), period_close=float(record['close']), period_high=float(record['high']), period_volume=float(record['volume']), data_source=source
+                                     period_low=float(record['low']),
+                                     period_open=float(record['open']),
+                                     period_close=float(record['close']),
+                                     period_high=float(record['high']),
+                                     period_volume=float(record['volume']),
+                                     data_source=source
                                      )
 
         except Exception as exc:
@@ -39,16 +48,35 @@ def get_nomics(request, query_currency):
 
         else:
             db_record.save()
+            append_trend_dates(request, db_record)
             x += 1
     return JsonResponse({"status_code": 202, "status": "Accepted",
-                         "message": f"Inserted {x} records on {datetime.datetime.now()}."}
+                         "message": f"Inserted {x} records on {timezone.now()}."}
                         )
 
 
 def append_optional_params(request, var_name, url_og):
+    '''
+        Checks if request is using an optional parameter and appends it to request of the source.
+    '''
     var_value = request.GET.get(var_name, '')
 
     if var_value:
         url_og += f"&{var_name}={var_value}"
 
     return url_og
+
+
+def append_trend_dates(request, candle):
+    '''
+        Appends foreign key of PyTrends unto Candle instance.
+    '''
+    date_converted = datetime.datetime.strptime(candle.period_start_timestamp[:10], '%Y-%m-%d')
+    try:
+        my_trend = get_object_or_404(PyTrends, pk=date_converted)
+    except:
+        return False
+    else:
+        candle.search_trend = my_trend
+        candle.save()
+        return True
