@@ -6,6 +6,7 @@ from crypto_track.trends import CryptoTrends
 from crypto_track.models import CryptoCandle
 from crypto_track.signal import Signal
 from . import crypto_data
+from crypto_track.track_exception import TrackException
 
 
 def signal(request):
@@ -23,16 +24,20 @@ def signal(request):
     search_date = ""
 
     try:
-        # Get queries from request
+        # Get currency from request
         user_currency = request.GET.get('currency', '')
+        # currency is required to be given in request.
+        if user_currency == "":
+            raise TrackException("Please specify a currency in your request.", "Bad Request")
+        my_signal = Signal(user_currency)
+
+        # Get date from request. Date is optional
         user_date = request.GET.get('date', search_date)
 
         if user_date != "":
             search_date = datetime.datetime.strptime(user_date, '%Y-%m-%d')
 
-        my_signal = Signal()
-
-        return_message = my_signal.get_signal(user_currency, search_date)
+        return_message = my_signal.get_signal(search_date)
     except Exception as exc:
         return JsonResponse({"status_code": 409,
                              "status": "Conflict",

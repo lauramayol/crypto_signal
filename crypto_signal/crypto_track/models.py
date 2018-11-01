@@ -15,7 +15,7 @@ class PyTrends(models.Model):
 
 class CryptoCandle(models.Model):
     '''
-        currency_traded (string): cryptocurrency being tracked
+        crypto_traded (string): cryptocurrency being tracked
         currency_quoted (string): currency used for the prices
         period_interval (string): Time interval of the candle
         period_start_timestamp (string): Start time of the candle in RFC3339
@@ -27,8 +27,10 @@ class CryptoCandle(models.Model):
         period_volume (dec): Volume transacted in period interval in currency_quoted
         data_source (string): where we got this data
         update_timestamp (datetime): when record was created in this database
+        prior_period_candle (CryptoCandle): used to calculate signal
+        signal (str): specifies BUY/SELL based on parameters as described in README.md
     '''
-    currency_traded = models.CharField(max_length=3)
+    crypto_traded = models.CharField(max_length=3)
     currency_quoted = models.CharField(max_length=3)
     period_interval = models.CharField(max_length=3)
     period_start_timestamp = models.CharField(max_length=50)
@@ -44,6 +46,22 @@ class CryptoCandle(models.Model):
     period_volume = models.DecimalField(max_digits=25, decimal_places=10)
     data_source = models.CharField(max_length=255)
     update_timestamp = models.DateTimeField(default=timezone.now())
+    prior_period_candle = models.ForeignKey('self',
+                                            null=True,
+                                            on_delete=models.SET_NULL
+                                            )
+    signal = models.CharField(max_length=4, null=True)
 
     def __str__(self):
         return f"{self.currency_traded} | {self.period_start_timestamp} | {self.data_source}"
+
+
+class CryptoTransact(models.Model):
+    '''
+        crypto_candle (CryptoCandle): which instance of cryptocandle object we are referring to
+        crypto_bank (dec): how much cryptocurrency we currently own
+        cash_bank (dec): how much cash we have in the bank (in terms of crypto_candle.currency_quoted)
+    '''
+    crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE)
+    crypto_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
+    cash_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
