@@ -27,7 +27,7 @@ Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-tra
 - [x] Switch to SQLite database for easier sharing.
 - [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
 - [ ] Explore switching to BitMEX source.
-- [ ] Optimize existing parameters (specifically, remove Google Trends parameter and revise BTC price change threshold of $80).
+- [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
 
 ### Paths
