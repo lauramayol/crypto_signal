@@ -30,7 +30,7 @@ def get_nomics(request, query_currency):
     for record in historical_crypto_results:
         try:
 
-            db_record = CryptoCandle(currency_traded=query_currency,
+            db_record = CryptoCandle(crypto_traded=query_currency,
                                      currency_quoted=currency_quote, period_interval=interval, period_start_timestamp=record['timestamp'],
                                      period_low=float(record['low']),
                                      period_open=float(record['open']),

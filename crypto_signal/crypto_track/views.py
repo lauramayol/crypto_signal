@@ -8,14 +8,13 @@ from crypto_track.signal import Signal
 from . import crypto_data
 from crypto_track.track_exception import TrackException
 
+bad_request_default = {"status_code": 400, "status": "Bad Request",
+                       "message": "Please submit a valid request."}
+
 
 def signal(request):
     '''
         # example request: GET localhost:8000/signal?currency=BTC&date=yyyy-mm-dd
-
-        Variables:
-        currency (str) =
-        date (str) = date of signal
 
         Return value:
         Returns buy or sell of currency queried for a given date, starting from 2013 up to today. If no date is given, latest available is returned.
@@ -54,10 +53,12 @@ def load_nomics(request):
         if query_currency == "" or request.method != "POST":
             raise Exception()
     except:
-        return JsonResponse({"status_code": 400, "status": "Bad Request",
-                             "message": "Please submit a valid request."})
+        return JsonResponse(bad_request_default)
     else:
         return_message = crypto_data.get_nomics(request, query_currency)
+
+        # whenever we load raw data, we want to update its signal
+        self.update_signal(request)
 
     return return_message
 
@@ -73,9 +74,10 @@ def load_ccxt(request):
 def load_trends(request):
     '''
         Used to populate PyTrends model from Google Trend data.
-        sample: POST localhost:8000/load/trends
+        sample: POST localhost:8000/load/trends?currency=BTC
     '''
-    if request.method == "POST":
+
+    if request.method == "POST" and request.GET.get('currency', '') == "BTC":
         my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
 
         end_date = datetime.datetime.now().date()
@@ -100,27 +102,60 @@ def load_trends(request):
                 end_date = start_date - datetime.timedelta(days=1)
                 start_date = start_date - datetime.timedelta(days=180)
 
+        # whenever we load raw data, we want to update its signal
+        self.update_signal(request)
+
         return JsonResponse({"status_code": 202, "status": status_message})
     else:
-        return JsonResponse({"status_code": 400, "status": "Bad Request",
-                             "message": "Please submit a valid request."})
+        return JsonResponse(bad_request_default)
 
 
 def update_candles(request):
     '''
         Updates search_trend for all candle data. We can use this if we have already loaded candle data but need to update the trend relationship on its own.
-        sample: PATCH localhost:8000/update/candles
+        sample: PATCH localhost:8000/update/candles?currency=BTC
     '''
-    if request.method == "PATCH":
+    if request.method == "PATCH" and request.GET.get('currency', '') == "BTC":
         x = 0
         for candle in CryptoCandle.objects.all():
             find_trend = crypto_data.append_trend_dates(request, candle)
             if find_trend:
                 x += 1
 
+        # whenever we load raw data, we want to update its signal
+        self.update_signal(request)
         return JsonResponse({"status_code": 202, "status": "Accepted",
                              "message": f"Updated {x} records on {timezone.now()}."}
                             )
     else:
-        return JsonResponse({"status_code": 400, "status": "Bad Request",
-                             "message": "Please submit a valid request."})
+        return JsonResponse(bad_request_default)
+
+
+def update_signal(request):
+    '''
+        Updates signal and prior_period_candle for all candle objects. We can use this if we have already loaded candle data but need to update the values on its own.
+        sample: PATCH localhost:8000/update/signal?currency=BTC
+    '''
+    if request.method == "PATCH":
+        try:
+            # Get currency from request
+            user_currency = request.GET.get('currency', '')
+            # currency is required to be given in request.
+            if user_currency == "":
+                raise TrackException("Please specify a currency in your request.", "Bad Request")
+            my_signal = Signal(user_currency)
+            confirm_message = my_signal.update_signal()
+
+        except Exception as exc:
+            return JsonResponse({"status_code": 409,
+                                 "status": "Conflict",
+                                 "type": type(exc).__name__,
+                                 "message": exc.__str__()})
+
+        else:
+
+            return JsonResponse({"status_code": 202, "status": "Accepted",
+                                 "message": confirm_message}
+                                )
+    else:
+        return JsonResponse(bad_request_default)

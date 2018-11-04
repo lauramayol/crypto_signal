@@ -25,4 +25,5 @@ urlpatterns = [
     path('load/trends', views.load_trends, name='load_trends'),
     path('signal', views.signal, name='signal'),
     path('update/candles', views.update_candles, name='update_candles'),
+    path('update/signal', views.update_signal, name='update_signal'),
 ]

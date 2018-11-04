@@ -1,8 +1,20 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 
 class PyTrends(models.Model):
+    '''
+    Description:
+        Obtained from Google Trend's "Interest over time" metric.
+
+    Attributes:
+        date (date): date of trend
+        buy_bitcoin (int): score for "buy_bitcoin" search term
+        btc_usd (int): score for "btc_usd" search term
+        is_partial (bool):
+        trend_ratio (dec): ratio of buy_bitcoin/btc_usd
+    '''
     date = models.DateField(primary_key=True)
     buy_bitcoin = models.IntegerField(null=True)
     btc_usd = models.IntegerField(null=True)
@@ -15,17 +27,18 @@ class PyTrends(models.Model):
 
 class CryptoCandle(models.Model):
     '''
-        crypto_traded (string): cryptocurrency being tracked
-        currency_quoted (string): currency used for the prices
-        period_interval (string): Time interval of the candle
-        period_start_timestamp (string): Start time of the candle in RFC3339
+    Attributes:
+        crypto_traded (str): cryptocurrency being tracked
+        currency_quoted (str): currency used for the prices
+        period_interval (str): Time interval of the candle
+        period_start_timestamp (str): Start time of the candle in RFC3339
         search_trend (PyTrend): PyTrend object related to that day (can be null)
         period_low (dec): Lowest price in currency_quoted
         period_open(dec): First trade price in currency_quoted
         period_close (dec): Last trade price in currency_quoted
         period_high (dec): Highest price in currency_quoted
         period_volume (dec): Volume transacted in period interval in currency_quoted
-        data_source (string): where we got this data
+        data_source (str): where we got this data
         update_timestamp (datetime): when record was created in this database
         prior_period_candle (CryptoCandle): used to calculate signal
         signal (str): specifies BUY/SELL based on parameters as described in README.md
@@ -53,15 +66,24 @@ class CryptoCandle(models.Model):
     signal = models.CharField(max_length=4, null=True)
 
     def __str__(self):
-        return f"{self.currency_traded} | {self.period_start_timestamp} | {self.data_source}"
+        return f"{self.crypto_traded} | {self.period_start_timestamp} | {self.data_source}"
 
 
-class CryptoTransact(models.Model):
+class Bank(models.Model):
     '''
-        crypto_candle (CryptoCandle): which instance of cryptocandle object we are referring to
-        crypto_bank (dec): how much cryptocurrency we currently own
-        cash_bank (dec): how much cash we have in the bank (in terms of crypto_candle.currency_quoted)
+    Description:
+        Used to model capital fluctuations based on signal.
+
+    Attributes:
+        crypto_candle (CryptoCandle): instance of cryptocandle object.
+        user (User): instance of user that holds this currency.
+        crypto_bank (dec): cryptocurrency amount owned at time of crypto_candle object.
+        cash_bank (dec): cash on hand at time of crypto_candle object (currency = crypto_candle.currency_quoted).
     '''
     crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     crypto_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
     cash_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
+
+    def __str__(self):
+        return f"{self.crypto_candle} | {self.user} | {self.crypto_bank}"
