@@ -136,7 +136,7 @@ class Signal():
         if self.simulation_id == 1:
             calc_signal = self.calculate_signal_v1(candle, compare_candle)
         elif self.simulation_id == 2:
-            calc_signal = self.calculate_signal_actual(compare_candle, candle)
+            calc_signal = self.calculate_signal_actual(candle, compare_candle)
         else:
             calc_signal = ""
 

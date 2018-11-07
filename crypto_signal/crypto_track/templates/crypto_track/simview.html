@@ -1,0 +1,12 @@
+<h1>Bitcoin BUY/SELL Signal Simulations</h1>
+
+{% if all_sims_list %}
+    <ol>
+    {% for sim in all_sims_list %}
+        <li>{{ sim.name }}<br><i>{{ sim.description }}</i><br></li>
+    {% endfor %}
+    </ol>
+{% else %}
+    <p>No Simulations have been created.</p>
+{% endif %}
+

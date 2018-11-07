@@ -23,7 +23,7 @@ class SimulationView(generic.ListView):
 
 def signal(request, simulation_id):
     '''
-        # example request: GET localhost:8000/signal/1?currency=BTC&date=yyyy-mm-dd
+        # example request: GET localhost:8000/1/signal?currency=BTC&date=yyyy-mm-dd
 
         Return value:
         Returns buy or sell of currency queried for a given date, starting from 2013 up to today. If no date is given, latest available is returned.
@@ -144,7 +144,7 @@ def update_signal(request, simulation_id):
     '''
         Updates signal and prior_period_candle for all candle objects. We can use this if we have already loaded candle data but need to update the values on its own.
         Note: simulation_id is optional, if none is given, all Simulations will be re-calculated (should be used when we re-load the source, then we need to re-calculate all Sims).
-        sample: PATCH localhost:8000/update/signal/1?currency=BTC
+        sample: PATCH localhost:8000/update/1/signal?currency=BTC
     '''
     if request.method == "PATCH":
         try:
