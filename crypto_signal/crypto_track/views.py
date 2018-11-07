@@ -132,7 +132,7 @@ def update_candles(request):
                 x += 1
 
         # whenever we load raw data, we want to update its signal
-        self.update_signal(request)
+        update_signal(request)
         return JsonResponse({"status_code": 202, "status": "Accepted",
                              "message": f"Updated {x} records on {timezone.now()}."}
                             )
@@ -152,7 +152,6 @@ def update_signal(request, simulation_id=""):
             confirm_message = ""
             # Get currency from request
             user_currency = request.GET.get('currency', '')
-
             # currency is required to be given in request.
             if user_currency == "":
                 raise TrackException("Please specify a currency in your request.", "Bad Request")
