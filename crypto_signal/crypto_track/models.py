@@ -40,8 +40,7 @@ class CryptoCandle(models.Model):
         period_volume (dec): Volume transacted in period interval in currency_quoted
         data_source (str): where we got this data
         update_timestamp (datetime): when record was created in this database
-        prior_period_candle (CryptoCandle): used to calculate signal
-        signal (str): specifies BUY/SELL based on parameters as described in README.md
+
     '''
     crypto_traded = models.CharField(max_length=3)
     currency_quoted = models.CharField(max_length=3)
@@ -59,14 +58,47 @@ class CryptoCandle(models.Model):
     period_volume = models.DecimalField(max_digits=25, decimal_places=10)
     data_source = models.CharField(max_length=255)
     update_timestamp = models.DateTimeField(default=timezone.now())
-    prior_period_candle = models.ForeignKey('self',
-                                            null=True,
-                                            on_delete=models.SET_NULL
-                                            )
-    signal = models.CharField(max_length=4, null=True)
 
     def __str__(self):
         return f"{self.crypto_traded} | {self.period_start_timestamp} | {self.data_source}"
+
+
+class Simulation(models.Model):
+    '''
+        Attritbutes:
+            name (str): short name of signal simulation.
+            description (str): long description of simulation.
+    '''
+
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=300)
+
+    def __str__(self):
+        return f"{self.id} | {self.name}"
+
+
+class SignalSimulation(models.Model):
+    '''
+    Description:
+        Used to model different BUY/SELL signals.
+
+    Attributes:
+        crypto_candle (CryptoCandle): instance of cryptocandle object for which signal is simulated.
+        simulation (Signal): Simulation model being used.
+        compare_candle (CryptoCandle): used to calculate signal.
+        signal (str): specifies BUY/SELL based on parameters as described in signal.description.
+    '''
+    crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE, related_name="cryptocandle_simulation")
+    simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
+    candle_compare = models.ForeignKey(CryptoCandle,
+                                        null=True,
+                                        on_delete=models.SET_NULL,
+                                        related_name="cryptocandle_simulation_compare"
+                                        )
+    signal = models.CharField(max_length=4, null=True)
+
+    def __str__(self):
+        return f"{self.crypto_candle} | {self.simulation} | {self.signal}"
 
 
 class Bank(models.Model):
@@ -75,15 +107,15 @@ class Bank(models.Model):
         Used to model capital fluctuations based on signal.
 
     Attributes:
-        crypto_candle (CryptoCandle): instance of cryptocandle object.
+        signal_simulation (SignalSimulation): instance of cryptocandle object.
         user (User): instance of user that holds this currency.
         crypto_bank (dec): cryptocurrency amount owned at time of crypto_candle object.
         cash_bank (dec): cash on hand at time of crypto_candle object (currency = crypto_candle.currency_quoted).
     '''
-    crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE)
+    signal_simulation = models.ForeignKey(SignalSimulation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     crypto_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
     cash_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
 
     def __str__(self):
-        return f"{self.crypto_candle} | {self.user} | {self.crypto_bank}"
+        return f"{self.signal_simulation} | {self.user} | Crypto Bank: {self.crypto_bank} | Cash Bank: {self.cash_bank}"

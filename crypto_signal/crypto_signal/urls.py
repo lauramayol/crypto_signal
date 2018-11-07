@@ -17,13 +17,19 @@ from django.contrib import admin
 from django.urls import path
 from crypto_track import views
 
+
+app_name = 'crypto_track'
+
+admin.autodiscover()
+
 urlpatterns = [
+    path('', views.SimulationView.as_view(), name='home'),
     path('admin/', admin.site.urls),
     path('load/nomics', views.load_nomics, name='load_nomics'),
     path('load/kaggle', views.load_kaggle, name='load_kaggle'),
     path('load/ccxt', views.load_ccxt, name='load_ccxt'),
     path('load/trends', views.load_trends, name='load_trends'),
-    path('signal', views.signal, name='signal'),
+    path('signal/<int:simulation_id>', views.signal, name='signal'),
     path('update/candles', views.update_candles, name='update_candles'),
-    path('update/signal', views.update_signal, name='update_signal'),
+    path('update/signal/<int:simulation_id>', views.update_signal, name='update_signal'),
 ]

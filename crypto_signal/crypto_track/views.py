@@ -1,9 +1,10 @@
 
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views import generic
 import datetime
 from crypto_track.trends import CryptoTrends
-from crypto_track.models import CryptoCandle
+from crypto_track.models import CryptoCandle, Simulation
 from crypto_track.signal import Signal
 from . import crypto_data
 from crypto_track.track_exception import TrackException
@@ -12,9 +13,17 @@ bad_request_default = {"status_code": 400, "status": "Bad Request",
                        "message": "Please submit a valid request."}
 
 
-def signal(request):
+class SimulationView(generic.ListView):
+    template_name = 'crypto_track/simview.html'
+    context_object_name = 'all_sims_list'
+
+    def get_queryset(self):
+        return Simulation.objects.order_by('id')
+
+
+def signal(request, simulation_id):
     '''
-        # example request: GET localhost:8000/signal?currency=BTC&date=yyyy-mm-dd
+        # example request: GET localhost:8000/signal/1?currency=BTC&date=yyyy-mm-dd
 
         Return value:
         Returns buy or sell of currency queried for a given date, starting from 2013 up to today. If no date is given, latest available is returned.
@@ -26,9 +35,9 @@ def signal(request):
         # Get currency from request
         user_currency = request.GET.get('currency', '')
         # currency is required to be given in request.
-        if user_currency == "":
-            raise TrackException("Please specify a currency in your request.", "Bad Request")
-        my_signal = Signal(user_currency)
+        if user_currency == "" or simulation_id == None:
+            raise TrackException("Please specify a simulation ID and currency in your request.", "Bad Request")
+        my_signal = Signal(currency=user_currency, simulation=simulation_id)
 
         # Get date from request. Date is optional
         user_date = request.GET.get('date', search_date)
@@ -131,20 +140,31 @@ def update_candles(request):
         return JsonResponse(bad_request_default)
 
 
-def update_signal(request):
+def update_signal(request, simulation_id):
     '''
         Updates signal and prior_period_candle for all candle objects. We can use this if we have already loaded candle data but need to update the values on its own.
-        sample: PATCH localhost:8000/update/signal?currency=BTC
+        Note: simulation_id is optional, if none is given, all Simulations will be re-calculated (should be used when we re-load the source, then we need to re-calculate all Sims).
+        sample: PATCH localhost:8000/update/signal/1?currency=BTC
     '''
     if request.method == "PATCH":
         try:
+            # initiate variables
+            confirm_message = ""
             # Get currency from request
             user_currency = request.GET.get('currency', '')
+
             # currency is required to be given in request.
             if user_currency == "":
                 raise TrackException("Please specify a currency in your request.", "Bad Request")
-            my_signal = Signal(user_currency)
-            confirm_message = my_signal.update_signal()
+
+            elif simulation_id == "":
+                # If we do not specify a simulation, all will be updated based on the Simulations table.
+                for sim in Simulation.objects.all():
+                    my_signal = Signal(currency=user_currency, simulation=sim.id)
+                    confirm_message += my_signal.update_signal()
+            else:
+                my_signal = Signal(currency=user_currency, simulation=simulation_id)
+                confirm_message = my_signal.update_signal()
 
         except Exception as exc:
             return JsonResponse({"status_code": 409,
