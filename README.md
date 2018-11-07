@@ -34,11 +34,11 @@ Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-tra
 | Location | End Point |
 | :-- | :-- |
 | Root path | `/`|
-| Signal | `/signal`|
+| Signal | `/<simulation_id>/signal`|
 | Load Bitcoin data | `/load/nomics`|
 | Load trends data | `/load/trends`|
 | Update candles foreign keys | `/update/candles`|
-| Update BUY/SELL signal | `/update/signal`|
+| Update BUY/SELL signal | `/update/<simulation_id>/signal`|
 
 
 ### HTTP request and query methods

@@ -37,7 +37,7 @@ def signal(request, simulation_id):
         # currency is required to be given in request.
         if user_currency == "" or simulation_id == None:
             raise TrackException("Please specify a simulation ID and currency in your request.", "Bad Request")
-        my_signal = Signal(currency=user_currency, simulation=simulation_id)
+        my_signal = Signal(currency=user_currency, simulation_id=simulation_id)
 
         # Get date from request. Date is optional
         user_date = request.GET.get('date', search_date)
@@ -67,7 +67,7 @@ def load_nomics(request):
         return_message = crypto_data.get_nomics(request, query_currency)
 
         # whenever we load raw data, we want to update its signal
-        self.update_signal(request)
+        update_signal(request)
 
     return return_message
 
@@ -112,7 +112,7 @@ def load_trends(request):
                 start_date = start_date - datetime.timedelta(days=180)
 
         # whenever we load raw data, we want to update its signal
-        self.update_signal(request)
+        update_signal(request)
 
         return JsonResponse({"status_code": 202, "status": status_message})
     else:
@@ -140,7 +140,7 @@ def update_candles(request):
         return JsonResponse(bad_request_default)
 
 
-def update_signal(request, simulation_id):
+def update_signal(request, simulation_id=""):
     '''
         Updates signal and prior_period_candle for all candle objects. We can use this if we have already loaded candle data but need to update the values on its own.
         Note: simulation_id is optional, if none is given, all Simulations will be re-calculated (should be used when we re-load the source, then we need to re-calculate all Sims).
@@ -160,10 +160,11 @@ def update_signal(request, simulation_id):
             elif simulation_id == "":
                 # If we do not specify a simulation, all will be updated based on the Simulations table.
                 for sim in Simulation.objects.all():
-                    my_signal = Signal(currency=user_currency, simulation=sim.id)
+                    my_signal = Signal(currency=user_currency, simulation_id=sim.id)
                     confirm_message += my_signal.update_signal()
             else:
-                my_signal = Signal(currency=user_currency, simulation=simulation_id)
+
+                my_signal = Signal(currency=user_currency, simulation_id=simulation_id)
                 confirm_message = my_signal.update_signal()
 
         except Exception as exc:
