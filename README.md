@@ -86,8 +86,8 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ##### Goal: optimize parameters
 - [x] Switch to SQLite database for easier sharing.
 - [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
-- [ ] Explore switching to BitMEX source.
-- [ ] Optimize existing parameters (specifically, remove Google Trends parameter and revise BTC price change threshold of $80).
+- [ ] Explore other sources (ie. BitMEX, CCXT).
+- [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
 
 ### 3.0 release
