@@ -3,11 +3,10 @@
 
 This release provides an API that recommends Buy/Sell of Bitcoin for a given date with intention to maximize profits.
 
-Requirements to BUY (based on Marc Howard's blog):
+Requirements to BUY (based on [Marc Howard's blog](https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4) ):
 1. Search terms of “Buy Bitcoin” to “BTC USD” ratio is more than 35%.
 2. BTC price difference closes more than $80 above the prior day’s close price.
 
-Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
 
 
 
@@ -17,7 +16,7 @@ Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-tra
 - [x] Get historical transaction data for Bitcoin.
 - [x] Get Google Trends data.
 - [x] Import data into database.
-- [x] Identify buy/sell based on parameters described in article.
+- [x] Identify buy/sell based on parameters described in blog.
 - [x] Use Django to create API.
 - [x] Write api docs and publish.
 
@@ -61,7 +60,7 @@ Reference Marc Howard's blog: https://hackernoon.com/how-i-created-a-bitcoin-tra
 ### Support
 
 
-If you are having issues, please let me know.
+If you are having issues, please let me know by posting on Issue Tracker.
 
 
 
@@ -79,7 +78,7 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [x] Get historical transaction data for Bitcoin.
 - [x] Get Google Trends data.
 - [x] Import data into database.
-- [x] Identify buy/sell based on parameters described in article.
+- [x] Identify buy/sell based on parameters described in blog.
 - [x] Use Django to create API.
 - [x] Write api docs and publish.
 
