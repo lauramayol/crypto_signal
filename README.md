@@ -24,7 +24,7 @@ Requirements to BUY (based on [Marc Howard's blog](https://hackernoon.com/how-i-
 
 - [x] Switch to SQLite database for easier sharing.
 - [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
-- [ ] Explore switching to BitMEX source.
+- [ ] Explore other sources (ie. BitMEX, CCXT).
 - [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
 
