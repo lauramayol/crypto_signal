@@ -65,9 +65,9 @@ python crypto_signal/manage.py runserver
 9. Check <http://127.0.0.1:8000/> on your browser.
 
 
-### Paths
+### Endpoints
 
-| Location | End Point |
+| Location | Endpoint |
 | :-- | :-- |
 | Root path | `/`|
 | Signal | `/<simulation_id>/signal`|
@@ -79,12 +79,12 @@ python crypto_signal/manage.py runserver
 
 ### HTTP request and query methods
 
-| Method | End Point | Query | Description | Examples |
+| Method | Endpoint | Query | Description | Examples |
 | :-- | :-- | :-- | :-- | :-- |
 | `GET` | `/` | `n/a` | Retrieves the current list of Simulations that can generate a signal. Reference this list to use the correct simulation_id with other methods. | `/` |
 | `GET` | `/<simulation_id>/signal` | `?currency=BTC&date=yyyy-mm-dd` | Retrieves the Buy/Sell signal from specified simulation in database for given currency (currently only Bitcoin (BTC) available and historical date (Jan 2013-Oct 2018). | `/1/signal?currency=BTC&date=2018-08-15` |
 | `POST` | `/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `/load/nomics?currency=BTC&start=2018-01-01` |
-| `POST` | `/load/trends` | `?currency=BTC` | Full load of Google trends Interet Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends?currency=BTC` |
+| `POST` | `/load/trends` | `?currency=BTC` | Full load of Google trends Interest Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends?currency=BTC` |
 | `PATCH` | `/update/candles` | `?currency=BTC` | Updates foreign key relationship of candle to trend model.  | `/update/candles?currency=BTC` |
 | `PATCH` | `/update/<simulation_id>/signal` | `?currency=BTC` | Updates BUY/SELL signal for each candle based on specified simulation.  | `/update/1/signal?currency=BTC` |
 
