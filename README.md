@@ -28,6 +28,43 @@ Requirements to BUY (based on [Marc Howard's blog](https://hackernoon.com/how-i-
 - [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
 
+## Running project locally
+
+1. Clone repo to your development environment
+```
+git clone https://github.com/lauramayol/crypto_signal.git
+```
+2. Install [virtualenv](https://virtualenv.pypa.io/en/latest/)
+```
+pip install virtualenv
+```
+3. Change directory to project folder
+```
+cd crypto_signal
+```
+4. Start virtualenv
+```
+virtualenv --python=/usr/local/bin/python3 env
+```
+5. Run virtualenv
+```
+source env/bin/activate 
+```
+6. Install dependencies using [pip](https://pip.pypa.io/en/latest/installing.html)
+```
+pip3 install -r requirements.txt
+```
+7. Add Nomics Api Key to environment variables. [Nomics](https://nomics.com/)
+```
+export NOMICS_API_KEY=YOUR_API_KEY
+```
+8. Run development server
+```
+python crypto_signal/manage.py runserver    
+``` 
+9. Check <http://127.0.0.1:8000/> on your browser.
+
+
 ### Endpoints
 
 | Location | Endpoint |
