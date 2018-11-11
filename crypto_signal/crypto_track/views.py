@@ -112,7 +112,7 @@ def load_trends(request):
                 start_date = start_date - datetime.timedelta(days=180)
 
         # whenever we load raw data, we want to update its signal
-        update_signal(request)
+        update_candles(request)
 
         return JsonResponse({"status_code": 202, "status": status_message})
     else:
@@ -124,7 +124,7 @@ def update_candles(request):
         Updates search_trend for all candle data. We can use this if we have already loaded candle data but need to update the trend relationship on its own.
         sample: PATCH localhost:8000/update/candles?currency=BTC
     '''
-    if request.method == "PATCH" and request.GET.get('currency', '') == "BTC":
+    if request.method in ("POST", "PATCH") and request.GET.get('currency', '') == "BTC":
         x = 0
         for candle in CryptoCandle.objects.all():
             find_trend = crypto_data.append_trend_dates(request, candle)

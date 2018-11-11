@@ -60,7 +60,7 @@ class CryptoCandle(models.Model):
     update_timestamp = models.DateTimeField(default=timezone.now())
 
     def __str__(self):
-        return f"{self.crypto_traded} | {self.period_start_timestamp} | {self.data_source}"
+        return f"{self.crypto_traded} | {self.period_start_timestamp} | {self.data_source} | Period Close: {self.period_close}"
 
 
 class Simulation(models.Model):
@@ -72,6 +72,7 @@ class Simulation(models.Model):
 
     name = models.CharField(max_length=50)
     description = models.CharField(max_length=300)
+    url = models.CharField(max_length=300, null=True)
 
     def __str__(self):
         return f"{self.id} | {self.name}"
@@ -91,10 +92,10 @@ class SignalSimulation(models.Model):
     crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE, related_name="cryptocandle_simulation")
     simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
     candle_compare = models.ForeignKey(CryptoCandle,
-                                        null=True,
-                                        on_delete=models.SET_NULL,
-                                        related_name="cryptocandle_simulation_compare"
-                                        )
+                                       null=True,
+                                       on_delete=models.SET_NULL,
+                                       related_name="cryptocandle_simulation_compare"
+                                       )
     signal = models.CharField(max_length=4, null=True)
 
     def __str__(self):
@@ -114,8 +115,9 @@ class Bank(models.Model):
     '''
     signal_simulation = models.ForeignKey(SignalSimulation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    crypto_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
-    cash_bank = models.DecimalField(max_digits=25, decimal_places=15, null=True)
+    # storing values in CharField because Sqlite stores them as float and we do not want to lose decimal point significance.
+    crypto_bank = models.CharField(max_length=50, default='0.0')
+    cash_bank = models.CharField(max_length=50, default='0.0000')
 
     def __str__(self):
         return f"{self.signal_simulation} | {self.user} | Crypto Bank: {self.crypto_bank} | Cash Bank: {self.cash_bank}"

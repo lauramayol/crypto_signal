@@ -3,7 +3,12 @@
 {% if all_sims_list %}
     <ol>
     {% for sim in all_sims_list %}
-        <li>{{ sim.name }}<br><i>{{ sim.description }}</i><br></li>
+        <li>
+    {% if sim.url %}<a href={{ sim.url }}>{{ sim.name }}</a>
+    {% else %}{{ sim.name }}
+    {% endif %}
+
+    <br><i>{{ sim.description }}</i><br></li>
     {% endfor %}
     </ol>
 {% else %}

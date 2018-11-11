@@ -79,10 +79,6 @@ class Signal():
         # initiate variables to be used in loop
         prior_candle = ""
         x = 0
-        buy_switch = "SELL"
-        # for now, we are just trading with "admin" money
-        trader_name = "admin"
-        trader = get_user_model().objects.get_or_create(username=trader_name)[0]
         # below i want to make sure my delta is working along with my period interval. This will need to be updated once we introduce hourly intervals.
         if self.period_interval == "1d":
             delta_requirement = 1
@@ -104,13 +100,7 @@ class Signal():
                                           simulation=self.simulation_obj
                                           )
                 my_sim.save()
-            # delete if bank object already exists, then re-create.
-                Bank.objects.filter(signal_simulation=my_sim, user=trader).delete()
-                my_bank = Bank(signal_simulation=my_sim,
-                               user=trader,
-                               crypto_bank=0.0,
-                               cash_bank=decimal.Decimal(1.0))
-                my_bank.save()
+
             # Make sure we have required values to calculate signal: (1) a candle instance to compare against, (2) trend ratio to compare
             elif candle.search_trend.trend_ratio:
                 candle_delta = candle.search_trend.date - prior_candle.search_trend.date
@@ -121,11 +111,10 @@ class Signal():
                     # counting our success instances
                     if sim_result:
                         x += 1
-                        # simulate our bank
-                        my_bank_results = self.model_transactions(sim_result, buy_switch, trader, my_bank)
-                        my_bank = my_bank_results[0]
-                        buy_switch = my_bank_results[1]
             prior_candle = candle
+
+        # Once we have updated all signals, we can model transaction history.
+        self.transaction_history()
 
         return f"Inserted {x} records on {timezone.now()}."
 
@@ -152,9 +141,11 @@ class Signal():
     def calculate_signal_v1(self, candle, prior_period_candle):
         '''
             Calculates Version 1.0 of signal (based on Marc Howard's blog):
-            Requirements to BUY :
-                1. Search terms of “Buy Bitcoin” to “BTC USD” ratio is more than 35%.
+            BUY signal:
+                1. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35%.
                 2. BTC price difference closes more than $80 above the prior day’s close price.
+            SELL signal:
+                BUY signal requirements not met.
         '''
         # default values
         trend_ratio_default = 0.35
@@ -173,9 +164,9 @@ class Signal():
     def calculate_signal_actual(self, candle, next_candle):
         '''
             Calculates Hindsight version of signal:
-            Requirements to BUY:
+            BUY signal:
                 -- Next candle price close is higher (buy before increase).
-            Requirements to SELL:
+            SELL signal:
                 -- Next candle price close is lower (sell at peak).
         '''
         if candle.period_close > next_candle.period_close:
@@ -188,7 +179,45 @@ class Signal():
 
         return calc_signal
 
-    def model_transactions(self, my_sim, prior_signal, trader, prior_bank):
+    def transaction_history(self, trader_name="admin"):
+        '''
+            Transaction history created for simulation subset. This is separate from self.update_signal because it always needs to go in chronological order whereas update_signal does not.
+        '''
+        # initialize variables to be used in loop
+        buy_switch = "SELL"
+        trader = get_user_model().objects.get_or_create(username=trader_name)[0]
+        prior_sim = ""
+        for candle in self.candle_subset.order_by('period_start_timestamp'):
+
+            try:
+                sim = get_object_or_404(SignalSimulation,
+                                        crypto_candle=candle,
+                                        simulation=self.simulation_obj)
+            except:
+                next
+            else:
+                # Initialize our starting cash amount.
+                if prior_sim == "":
+                    # delete if bank object already exists, then re-create.
+                    Bank.objects.filter(signal_simulation=sim, user=trader).delete()
+                    my_bank = Bank(signal_simulation=sim,
+                                   user=trader,
+                                   # crypto_bank=(0.0),
+                                   cash_bank='1.0')
+                    my_bank.save()
+                elif sim.signal:
+                    # Remove HOLD signal, make sure it copies signal from prior day
+                    if sim.signal == "HOLD":
+                        sim.signal = prior_sim.signal
+                        sim.save()
+                    # simulate our bank
+                    my_bank_results = self.create_transaction(sim, buy_switch, trader, my_bank)
+                    my_bank = my_bank_results[0]
+                    buy_switch = my_bank_results[1]
+                prior_sim = sim
+        return my_bank
+
+    def create_transaction(self, my_sim, prior_signal, trader, prior_bank):
         '''
             This is a basic model:
             1. Spend full cash_bank at first BUY signal
@@ -202,14 +231,14 @@ class Signal():
             if my_sim.signal == "BUY":
                 my_bank = Bank(signal_simulation=my_sim,
                                user=trader,
-                               crypto_bank=prior_bank.cash_bank / my_sim.crypto_candle.period_close,
-                               cash_bank=0.0)
+                               crypto_bank=str(decimal.Decimal(prior_bank.cash_bank) / decimal.Decimal(my_sim.crypto_candle.period_close)),
+                               cash_bank=str(0.0))
                 buy_switch = "BUY"
             elif my_sim.signal == "SELL":
                 my_bank = Bank(signal_simulation=my_sim,
                                user=trader,
-                               crypto_bank=0.0,
-                               cash_bank=prior_bank.crypto_bank * my_sim.crypto_candle.period_close)
+                               crypto_bank=str(0.0),
+                               cash_bank=str(decimal.Decimal(prior_bank.crypto_bank) * decimal.Decimal(my_sim.crypto_candle.period_close)))
                 buy_switch = "SELL"
             my_bank.save()
 
