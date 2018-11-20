@@ -30,6 +30,10 @@ Requirements to BUY (based on [Marc Howard's blog](https://hackernoon.com/how-i-
 
 ## Running project locally
 
+0. You'll need **Python 3.6 or later** for running the project. Check your version with
+```
+python3 --version
+```
 1. Clone repo to your development environment
 ```
 git clone https://github.com/lauramayol/crypto_signal.git
