@@ -99,11 +99,11 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ### 1.0 release
 ##### Goal: re-create the example from [Marc Howard's blog](https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4)
 
-BUY Signal:
-1. BTC price difference closes more than $80 above the prior day’s close price.
-2. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35% (Google Trends).
-SELL Signal:
-When price and ratio do not meet BUY requirements.
+    BUY Signal:
+    1. BTC price difference closes more than $80 above the prior day’s close price.
+    2. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35% (Google Trends).
+    SELL Signal:
+    When price and ratio do not meet BUY requirements.
 
 
 - [x] Get historical transaction data for Bitcoin.
