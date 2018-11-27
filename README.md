@@ -1,35 +1,28 @@
 # Bitcoin Signal
-*Release 1.0*
+*Release 1.1*
 
-This release provides an API that recommends Buy/Sell of Bitcoin for a given date with intention to maximize profits.
-
-Requirements to BUY (based on [Marc Howard's blog](https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4) ):
-1. Search terms of “Buy Bitcoin” to “BTC USD” ratio is more than 35%.
-2. BTC price difference closes more than $80 above the prior day’s close price.
-
-
+The goal of this project is to provide an API that recommends Buy/Sell/Hold of Bitcoin at any given time to maximize profitability.
 
 
 ## Features
 
 #### This release
-- [x] Get historical transaction data for Bitcoin.
-- [x] Get Google Trends data.
-- [x] Import data into database.
-- [x] Identify buy/sell based on parameters described in blog.
-- [x] Use Django to create API.
-- [x] Write api docs and publish.
+- [x] Switch to SQLite database for easier sharing.
+- [x] Use [graphical analysis](https://public.tableau.com/profile/laura.mayol.vargas#!/vizhome/CryptoSignal1_0/BitcoinBUYSELLmodel) to see how well the current buy/sell recommendations are performing.
+- [x] Released Hindisght simulation (best case scenario).
+    - BUY: When next day close price increases.
+    - SELL: When next day close price decreases.
+- [x] Home page created at root path that lists the simulations available and links to visualization.
 
 #### Next release
-
-- [x] Switch to SQLite database for easier sharing.
-- [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
-- [ ] Explore other sources (ie. BitMEX, CCXT).
-- [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
-- [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
+- [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ## Running project locally
 
+0. You'll need **Python 3.6 or later** for running the project. Check your version with
+```
+python3 --version
+```
 1. Clone repo to your development environment
 ```
 git clone https://github.com/lauramayol/crypto_signal.git
@@ -48,7 +41,7 @@ virtualenv --python=/usr/local/bin/python3 env
 ```
 5. Run virtualenv
 ```
-source env/bin/activate 
+source env/bin/activate
 ```
 6. Install dependencies using [pip](https://pip.pypa.io/en/latest/installing.html)
 ```
@@ -60,8 +53,8 @@ export NOMICS_API_KEY=YOUR_API_KEY
 ```
 8. Run development server
 ```
-python crypto_signal/manage.py runserver    
-``` 
+python crypto_signal/manage.py runserver
+```
 9. Check <http://127.0.0.1:8000/> on your browser.
 
 
@@ -110,7 +103,14 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ## To-do
 
 ### 1.0 release
-##### Goal: re-create the example from https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4
+##### Goal: re-create the example from [Marc Howard's blog](https://hackernoon.com/how-i-created-a-bitcoin-trading-algorithm-with-a-29-return-rate-using-sentiment-analysis-b0db0e777f4)
+
+    BUY Signal:
+    1. BTC price difference closes more than $80 above the prior day’s close price.
+    2. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35% (Google Trends).
+    SELL Signal:
+    When price and ratio do not meet BUY requirements.
+
 
 - [x] Get historical transaction data for Bitcoin.
 - [x] Get Google Trends data.
@@ -119,19 +119,27 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [x] Use Django to create API.
 - [x] Write api docs and publish.
 
-### 2.0 release
-##### Goal: optimize parameters
+### 1.1 release
+##### Goal: socialize model
 - [x] Switch to SQLite database for easier sharing.
-- [ ] Use graphical analysis to see how well the current buy/sell recommendations are performing.
-- [ ] Explore other sources (ie. BitMEX, CCXT).
-- [ ] Optimize existing parameters (specifically, revise Google Trends and BTC price change thresholds).
-- [ ] Incorporate OHLCV (open, high, low, close,volume) trends.
+- [x] Use [graphical analysis](https://public.tableau.com/profile/laura.mayol.vargas#!/vizhome/CryptoSignal1_0/BitcoinBUYSELLmodel) to see how well the current buy/sell recommendations are performing.
+- [x] Released Hindisght simulation (best case scenario).
+- [x] Home page created at root path that lists the simulations available and links to visualization.
+
+### 2.0 release
+##### Goal: Incorporate ML
+- [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ### 3.0 release
-##### Goal: live model and optimize the data sources
+##### Goal: Optimize the data sources
+- [ ] Explore other sources (ie. BitMEX, CCXT).
+- [ ] Optimize existing parameters as needed (specifically, revise Google Trends and BTC price change thresholds).
 - [ ] What other variables could play a part in Bitcoin price?
+
+### 4.0 release
+##### Goal: Live model
 - [ ] Get live transactional and order book data.
-- [ ] Compare various sources for historical data and implement as needed.
+- [ ] Schedule regular data refreshes on live server.
 
 
 
