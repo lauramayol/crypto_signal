@@ -10,6 +10,8 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [x] Switch to SQLite database for easier sharing.
 - [x] Use [graphical analysis](https://public.tableau.com/profile/laura.mayol.vargas#!/vizhome/CryptoSignal1_0/BitcoinBUYSELLmodel) to see how well the current buy/sell recommendations are performing.
 - [x] Released Hindisght simulation (best case scenario).
+    - BUY: When next day close price increases.
+    - SELL: When next day close price decreases.
 - [x] Home page created at root path that lists the simulations available and links to visualization.
 
 #### Next release
