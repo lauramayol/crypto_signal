@@ -12,6 +12,11 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 - [x] Released Hindisght simulation (best case scenario).
     - BUY: When next day close price increases.
     - SELL: When next day close price decreases.
+- [x] Released Version 1.1 simulation (modified price parameter).
+    - BUY:
+        1. BTC price closes more than 1% above the prior day’s close price.
+        2. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35% (Google Trends).
+    - SELL: When price and ratio do not meet BUY requirements.
 - [x] Home page created at root path that lists the simulations available and links to visualization.
 
 #### Next release

@@ -47,7 +47,6 @@ class BankTransaction():
                                    # crypto_bank=(0.0),
                                    cash_bank='1.0')
                     my_bank.save()
-                    print(my_bank)
                 elif sim.signal:
                     # Remove HOLD signal, make sure it copies signal from prior day
                     if sim.signal == "HOLD":
