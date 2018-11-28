@@ -72,11 +72,8 @@ def load_nomics(request):
     return return_message
 
 
-def load_kaggle(request):
-    pass
-
-
 def load_ccxt(request):
+    # Placeholder
     pass
 
 

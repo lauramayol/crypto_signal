@@ -20,9 +20,15 @@ class BankTransaction():
             Transaction history created for simulation subset. This is separate from self.update_signal because it always needs to go in chronological order whereas update_signal does not.
         '''
         # initialize variables to be used in loop
+        # we start with "SELL" because we haven't bought anything yet.
         buy_switch = "SELL"
         trader = get_user_model().objects.get_or_create(username=trader_name)[0]
-        prior_sim = ""
+        prior_sim = None
+
+        # delete if bank object already exists, then re-create.
+        Bank.objects.filter(signal_simulation__simulation=self.simulation,
+                            user=trader).delete()
+
         for candle in self.candle_data.order_by('period_start_timestamp'):
 
             try:
@@ -30,21 +36,27 @@ class BankTransaction():
                                         crypto_candle=candle,
                                         simulation=self.simulation)
             except:
+                # skip loop if SignalSimulation object is not found.
                 next
             else:
-                # Initialize our starting cash amount.
-                if prior_sim == "":
-                    # delete if bank object already exists, then re-create.
-                    Bank.objects.filter(signal_simulation=sim, user=trader).delete()
+                # Initialize our starting cash amount (we know it is beginning because there is no prior_sim.
+                if prior_sim is None:
+
                     my_bank = Bank(signal_simulation=sim,
                                    user=trader,
                                    # crypto_bank=(0.0),
                                    cash_bank='1.0')
                     my_bank.save()
+                    print(my_bank)
                 elif sim.signal:
                     # Remove HOLD signal, make sure it copies signal from prior day
                     if sim.signal == "HOLD":
-                        sim.signal = prior_sim.signal
+
+                        if prior_sim.signal:
+                            sim.signal = prior_sim.signal
+                        # If we are missing prior signal, then we just assume "SELL" because we haven't bought. Because we are sorting by start date, this will only happen on day 1.
+                        else:
+                            sim.signal = "SELL"
                         sim.save()
                     # simulate our bank
                     my_bank_results = self.create_transaction(sim, buy_switch, trader, my_bank)
@@ -59,8 +71,7 @@ class BankTransaction():
             1. Spend full cash_bank at first BUY signal
             2. Sell full crypto_bank at first SELL signal after a BUY.
         '''
-        # Delete the object if it already exists, we are re-calculating next
-        Bank.objects.filter(signal_simulation=my_sim, user=trader).delete()
+
         # If current signal as the same as prior, we do not act, so bank will stay the same.
         if prior_signal != my_sim.signal and my_sim.signal != "HOLD":
             # This means we have cash on hand because prior action was SELL.
