@@ -117,9 +117,11 @@ class Signal():
         '''
             Creates SignalSimulation object for candle provided.
         '''
-        # default values
-        if self.simulation_id == 1:
-            calc_signal = self.calculate_signal_v1(candle, compare_candle)
+        # default values for price difference
+        p_default = {1: 80, 3: 0.01}
+
+        if self.simulation_id in [1, 3]:
+            calc_signal = self.calculate_signal_v1(candle, compare_candle, p_default[self.simulation_id])
         elif self.simulation_id == 2:
             calc_signal = self.calculate_signal_actual(candle, compare_candle)
         else:
@@ -133,7 +135,7 @@ class Signal():
 
         return my_sim
 
-    def calculate_signal_v1(self, candle, prior_period_candle):
+    def calculate_signal_v1(self, candle, prior_period_candle, price_diff_default, trend_ratio_default=0.35):
         '''
             Calculates Version 1.0 of signal (based on Marc Howard's blog):
             BUY signal:
@@ -142,12 +144,12 @@ class Signal():
             SELL signal:
                 BUY signal requirements not met.
         '''
-        # default values
-        trend_ratio_default = 0.35
-        price_diff_default = 80
-        # get price difference
-        price_diff = candle.period_close - prior_period_candle.period_close
-        my_trend_ratio = candle.search_trend.trend_ratio
+
+        # calculate differences for current candle
+        my_changes = self.get_change_in_candle(candle, prior_period_candle)
+
+        price_diff = my_changes[0]
+        my_trend_ratio = my_changes[1]
 
         if my_trend_ratio is None:
             calc_signal = "HOLD"
@@ -157,6 +159,18 @@ class Signal():
             calc_signal = "SELL"
 
         return calc_signal
+
+    def get_change_in_candle(self, candle, prior_period_candle):
+        # get price difference
+        # for first sim we are using simple substract from prior to current price
+        if self.simulation_id == 1:
+            price_diff = candle.period_close - prior_period_candle.period_close
+        # for #3 sim we are using % difference
+        elif self.simulation_id == 3:
+            price_diff = (candle.period_close - prior_period_candle.period_close) / prior_period_candle.period_close
+        my_trend_ratio = candle.search_trend.trend_ratio
+
+        return price_diff, my_trend_ratio
 
     def calculate_signal_actual(self, candle, next_candle):
         '''
