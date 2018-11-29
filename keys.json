@@ -1,0 +1,4 @@
+{
+    "binance":       { "apiKey": "", "secret": "" },
+    "coinbase":      { "apiKey": "", "secret": "" }
+}
