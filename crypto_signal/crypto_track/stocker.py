@@ -44,6 +44,9 @@ class Stocker():
         # Columns required for prophet
         stock['Date'] = pd.to_datetime(stock['period_start_timestamp'], errors='coerce')
         stock['ds'] = stock['Date']
+        stock['period_close'] = stock.period_close.astype(float)
+        stock['period_open'] = stock.period_open.astype(float)
+        stock['period_volume'] = stock.period_volume.astype(float)
 
         stock['y'] = stock['period_close']
         stock['Daily Change'] = stock['period_close'] - stock['period_open']
@@ -167,23 +170,23 @@ class Stocker():
 
             # If both are not in dataframe, round both
             if (not end_in) & (not start_in):
-                trim_df = df[(df['Date'] >= start_date.date()) &
-                             (df['Date'] <= end_date.date())]
+                trim_df = df[(df['Date'] >= start_date) &
+                             (df['Date'] <= end_date)]
 
             else:
                 # If both are in dataframe, round neither
                 if (end_in) & (start_in):
-                    trim_df = df[(df['Date'] >= start_date.date()) &
-                                 (df['Date'] <= end_date.date())]
+                    trim_df = df[(df['Date'] >= start_date) &
+                                 (df['Date'] <= end_date)]
                 else:
                     # If only start is missing, round start
                     if (not start_in):
-                        trim_df = df[(df['Date'] > start_date.date()) &
-                                     (df['Date'] <= end_date.date())]
+                        trim_df = df[(df['Date'] > start_date) &
+                                     (df['Date'] <= end_date)]
                     # If only end is imssing round end
                     elif (not end_in):
-                        trim_df = df[(df['Date'] >= start_date.date()) &
-                                     (df['Date'] < end_date.date())]
+                        trim_df = df[(df['Date'] >= start_date) &
+                                     (df['Date'] < end_date)]
 
 
         else:
@@ -208,8 +211,8 @@ class Stocker():
                     end_date = pd.to_datetime(input(prompt='Enter a new end date: ') )
 
             # Dates are not rounded
-            trim_df = df[(df['Date'] >= start_date.date()) &
-                         (df['Date'] <= end_date.date())]
+            trim_df = df[(df['Date'] >= start_date) &
+                         (df['Date'] <= end_date)]
 
 
 
@@ -380,7 +383,7 @@ class Stocker():
     def changepoint_prior_analysis(self, changepoint_priors=[0.001, 0.05, 0.1, 0.2], colors=['b', 'r', 'grey', 'gold']):
 
         # Training and plotting with specified years of data
-        train = self.stock[(self.stock['Date'] > (max(self.stock['Date']) - pd.DateOffset(years=self.training_years)).date())]
+        train = self.stock[(self.stock['Date'] > (max(self.stock['Date']) - pd.DateOffset(years=self.training_years)))]
 
         # Iterate through all the changepoints and make models
         for i, prior in enumerate(changepoint_priors):
@@ -439,7 +442,7 @@ class Stocker():
         model = self.create_model()
 
         # Fit on the stock history for self.training_years number of years
-        stock_history = self.stock[self.stock['Date'] > (self.max_date - pd.DateOffset(years = self.training_years)).date()]
+        stock_history = self.stock[self.stock['Date'] > (self.max_date - pd.DateOffset(years = self.training_years))]
 
         if resample:
             stock_history = self.resample(stock_history)
@@ -494,7 +497,7 @@ class Stocker():
 
         # Training data starts self.training_years years before start date and goes up to start date
         train = self.stock[(self.stock['Date'] < start_date) &
-                           (self.stock['Date'] > (start_date - pd.DateOffset(years=self.training_years)))]
+                           (self.stock['Date'] > (start_date.date() - pd.DateOffset(years=self.training_years)))]
 
         # Testing data is specified in the range
         test = self.stock[(self.stock['Date'] >= start_date) & (self.stock['Date'] <= end_date)]
@@ -515,7 +518,7 @@ class Stocker():
         # Calculate the differences between consecutive measurements
         test['pred_diff'] = test['yhat'].diff()
         test['real_diff'] = test['y'].diff()
-
+        # test['real_diff'] = test.real_diff.astype(float)
         # Correct is when we predicted the correct direction
         test['correct'] = (np.sign(test['pred_diff']) == np.sign(test['real_diff'])) * 1
 
@@ -678,7 +681,10 @@ class Stocker():
 
         # Set up the trend fetching object
         pytrends = TrendReq(hl='en-US', tz=360)
-        kw_list = [search]
+        if isinstance(search, list):
+            kw_list = search
+        else:
+            kw_list = [search]
 
         try:
 
@@ -703,7 +709,7 @@ class Stocker():
         model = self.create_model()
 
         # Use past self.training_years years of data
-        train = self.stock[self.stock['Date'] > (self.max_date - pd.DateOffset(years = self.training_years)).date()]
+        train = self.stock[self.stock['Date'] > (self.max_date - pd.DateOffset(years = self.training_years))]
         model.fit(train)
 
         # Predictions of the training data (no future periods)
@@ -718,7 +724,7 @@ class Stocker():
         # Create dataframe of only changepoints
         change_indices = []
         for changepoint in (changepoints):
-            change_indices.append(train[train['ds'] == changepoint.date()].index[0])
+            change_indices.append(train[train['ds'] == changepoint].index[0])
 
         c_data = train.iloc[change_indices, :]
         deltas = model.params['delta'][0]
@@ -740,7 +746,7 @@ class Stocker():
         if not search:
 
             print('\nChangepoints sorted by slope rate of change (2nd derivative):\n')
-            print(c_data.loc[['Date', 'period_close', 'delta']][:5])
+            print(c_data[['Date', 'period_close', 'delta']][:5])
 
             # Line plot showing actual values, estimated values, and changepoints
             self.reset_plot()
@@ -782,10 +788,10 @@ class Stocker():
             print(related_queries[search]['rising'].head())
 
             # Upsample the data for joining with training data
-            trends = trends.resample('D')
+            trends = trends.resample('D').bfill()
 
             trends = trends.reset_index(level=0)
-            trends = trends.rename(columns={'date': 'ds', search: 'freq'})
+            trends = trends.rename(columns={'date': 'ds', search: f'freq'})
 
             # Interpolate the frequency
             trends['freq'] = trends['freq'].interpolate()
@@ -821,7 +827,7 @@ class Stocker():
     def predict_future(self, days=30):
 
         # Use past self.training_years years for training
-        train = self.stock[self.stock['Date'] > (max(self.stock['Date']) - pd.DateOffset(years=self.training_years)).date()]
+        train = self.stock[self.stock['Date'] > (max(self.stock['Date']) - pd.DateOffset(years=self.training_years))]
 
         model = self.create_model()
 
@@ -905,11 +911,11 @@ class Stocker():
         start_date, end_date = self.handle_dates(start_date, end_date)
 
         # Select self.training_years number of years
-        train = self.stock[(self.stock['Date'] > (start_date - pd.DateOffset(years=self.training_years)).date()) &
-        (self.stock['Date'] < start_date.date())]
+        train = self.stock[(self.stock['Date'] > (start_date - pd.DateOffset(years=self.training_years))) &
+        (self.stock['Date'] < start_date)]
 
         # Testing data is specified by range
-        test = self.stock[(self.stock['Date'] >= start_date.date()) & (self.stock['Date'] <= end_date.date())]
+        test = self.stock[(self.stock['Date'] >= start_date) & (self.stock['Date'] <= end_date)]
 
         eval_days = (max(test['Date']).date() - min(test['Date']).date()).days
 
