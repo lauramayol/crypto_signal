@@ -292,7 +292,7 @@ class Stocker():
         matplotlib.rcParams['axes.titlesize'] = 14
         matplotlib.rcParams['text.color'] = 'k'
 
-    # Method to linearly interpolate prices on the weekends
+    # Method to linearly interpolate prices when Gtrends pulls weekly
     def resample(self, dataframe):
         # Change the index and resample at daily level
         dataframe = dataframe.set_index('ds')
@@ -407,7 +407,7 @@ class Stocker():
             predictions['%.3f_yhat' % prior] = future['yhat']
 
         # Remove the weekends
-        predictions = self.remove_weekends(predictions)
+        #predictions = self.remove_weekends(predictions)
 
         # Plot set-up
         self.reset_plot()
@@ -841,7 +841,7 @@ class Stocker():
         future = future[future['ds'] >= max(self.stock['Date']).date()]
 
         # Remove the weekends
-        future = self.remove_weekends(future)
+        #future = self.remove_weekends(future)
 
         # Calculate whether increase or not
         future['diff'] = future['yhat'].diff()
