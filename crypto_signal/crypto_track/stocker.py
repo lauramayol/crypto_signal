@@ -7,6 +7,8 @@ import fbprophet
 import pytrends
 from pytrends.request import TrendReq
 from crypto_track.signal import Signal
+from crypto_track.models import CryptoProphet, Simulation
+from django.shortcuts import get_object_or_404
 
 # matplotlib pyplot for plotting
 import matplotlib.pyplot as plt
@@ -858,6 +860,8 @@ class Stocker():
         future_increase = future[future['direction'] == 1]
         future_decrease = future[future['direction'] == 0]
 
+        self.dbload_prophet(future, 4)
+
         # Print out the dates
         print('\nPredicted Increase: \n')
         print(future_increase[['Date', 'estimate', 'change', 'upper', 'lower']])
@@ -983,3 +987,31 @@ class Stocker():
         plt.xticks(results['cps'], results['cps'])
         plt.legend(prop={'size':10})
         plt.show();
+
+    def dbload_prophet(self, df, sim_id):
+        '''
+            Loads given pandas dataframe (df) into CryptoProphet model in database.
+        '''
+        simulation_obj = get_object_or_404(Simulation, pk=sim_id)
+
+        # Loop through data to create database record,
+        for index, row in df.iterrows():
+            # Delete if unique record exists for individual Date, Simulation, and Cryptocurrency. Assume all defaults remain (currency_quoted=USD, period_interval=1d)
+            try:
+                my_prophet = get_object_or_404(CryptoProphet,
+                                            date = row['Date'],
+                                            simulation=simulation_obj,
+                                    crypto_traded=self.symbol)
+            except:
+                pass
+            else:
+                my_prophet.delete()
+            prophet_record = CryptoProphet(date=row['Date'],
+                                    simulation= simulation_obj,
+                                    crypto_traded=self.symbol,
+                                    price_close=row['estimate'],
+                                    price_upper=row['upper'],
+                                    price_lower=row['lower'],
+                                    price_change=row['change'],
+                                    )
+            prophet_record.save()

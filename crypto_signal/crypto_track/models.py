@@ -85,7 +85,7 @@ class SignalSimulation(models.Model):
 
     Attributes:
         crypto_candle (CryptoCandle): instance of cryptocandle object for which signal is simulated.
-        simulation (Signal): Simulation model being used.
+        simulation (Simulation): Simulation model being used.
         compare_candle (CryptoCandle): used to calculate signal.
         signal (str): specifies BUY/SELL based on parameters as described in signal.description.
     '''
@@ -121,3 +121,33 @@ class Bank(models.Model):
 
     def __str__(self):
         return f"{self.signal_simulation} | {self.user} | Crypto Bank: {self.crypto_bank} | Cash Bank: {self.cash_bank}"
+
+
+class CryptoProphet(models.Model):
+    '''
+        Description:
+            Stores predicted data.
+
+        Attributes:
+            date (date): date of prediction
+            simulation (Simulation): Simulation model being used
+            crypto_traded (str): cryptocurrency being tracked
+            currency_quoted (str): currency used for the prices
+            period_interval (str): Time interval of the candle
+            period_close (dec): predicted price in currency_quoted
+            trend_ratio (dec): ratio of buy_bitcoin/btc_usd predicted
+
+    '''
+    date = models.DateField()
+    simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
+    crypto_traded = models.CharField(max_length=3)
+    currency_quoted = models.CharField(max_length=3, default='USD')
+    period_interval = models.CharField(max_length=3, default='1d')
+    price_close = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    price_upper = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    price_lower = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    price_change = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
+
+    def __str__(self):
+        return f"{self.date} | {self.crypto_traded} | {self.simulation}"
