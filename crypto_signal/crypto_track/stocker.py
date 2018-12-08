@@ -7,7 +7,7 @@ import fbprophet
 import pytrends
 from pytrends.request import TrendReq
 from crypto_track.signal import Signal
-from crypto_track.models import CryptoProphet, Simulation
+from crypto_track.models import CryptoProphet, Simulation, CryptoCandle
 from django.shortcuts import get_object_or_404
 
 # matplotlib pyplot for plotting
@@ -433,7 +433,7 @@ class Stocker():
 
         # Plot labels
         plt.legend(loc = 2, prop={'size': 10})
-        plt.xlabel('Date'); plt.ylabel('Stock Price ($)'); plt.title('Effect of Changepoint Prior Scale');
+        plt.xlabel('Date'); plt.ylabel('Price ($)'); plt.title('Effect of Changepoint Prior Scale');
         plt.show()
 
     # Basic prophet model for specified number of days
@@ -455,14 +455,18 @@ class Stocker():
         future = model.make_future_dataframe(periods = days, freq='D')
         future = model.predict(future)
 
+        future['diff'] = future['yhat'].diff()
+
+        # self.dbload_prophet(future)
+
         if days > 0:
             # Print the predicted price
             print('Predicted Price on {} = ${:.2f}'.format(
                 future.iloc[len(future) - 1, future.columns.get_loc('ds')].date(), future.iloc[len(future) - 1, future.columns.get_loc('yhat')]))
 
-            title = '%s Historical and Predicted Stock Price'  % self.symbol
+            title = '%s Historical and Predicted Price'  % self.symbol
         else:
-            title = '%s Historical and Modeled Stock Price' % self.symbol
+            title = '%s Historical and Modeled Price' % self.symbol
 
         # Set up the plot
         fig, ax = plt.subplots(1, 1)
@@ -754,7 +758,7 @@ class Stocker():
             self.reset_plot()
 
             # Set up line plot
-            plt.plot(train['ds'], train['y'], 'ko', ms = 4, label = 'Stock Price')
+            plt.plot(train['ds'], train['y'], 'ko', ms = 4, label = 'Price')
             plt.plot(future['ds'], future['yhat'], color = 'navy', linewidth = 2.0, label = 'Modeled')
 
             # Changepoints as vertical lines
@@ -767,7 +771,7 @@ class Stocker():
                        linewidth= 1.2, label='Positive Changepoints')
 
             plt.legend(prop={'size':10});
-            plt.xlabel('Date'); plt.ylabel('Price ($)'); plt.title('Stock Price with Changepoints')
+            plt.xlabel('Date'); plt.ylabel('Price ($)'); plt.title('Price with Changepoints')
             plt.show()
 
         # Search for search term in google news
@@ -808,7 +812,7 @@ class Stocker():
             self.reset_plot()
 
             # Plot the normalized stock price and normalize search frequency
-            plt.plot(train['ds'], train['y_norm'], 'k-', label = 'Stock Price')
+            plt.plot(train['ds'], train['y_norm'], 'k-', label = 'Price')
             plt.plot(train['ds'], train['freq_norm'], color='goldenrod', label = 'Search Frequency')
 
             # Changepoints as vertical lines
@@ -822,7 +826,7 @@ class Stocker():
 
             # Plot formatting
             plt.legend(prop={'size': 10})
-            plt.xlabel('Date'); plt.ylabel('Normalized Values'); plt.title('%s Stock Price and Search Frequency for %s' % (self.symbol, search))
+            plt.xlabel('Date'); plt.ylabel('Normalized Values'); plt.title('%s Price and Search Frequency for %s' % (self.symbol, search))
             plt.show()
 
     # Predict the future price for a given range of days
@@ -839,19 +843,23 @@ class Stocker():
         future = model.make_future_dataframe(periods=days, freq='D')
         future = model.predict(future)
 
-        # Only concerned with future dates
-        future = future[future['ds'] >= max(self.stock['Date']).date()]
-
-        # Remove the weekends
-        #future = self.remove_weekends(future)
-
         # Calculate whether increase or not
         future['diff'] = future['yhat'].diff()
+
+        #Load the database
+        self.dbload_prophet(future)
+
+        # Only concerned with future dates
+        future = future[future['ds'] >= max(self.stock['Date'])]
+
+
 
         future = future.dropna()
 
         # Find the prediction direction and create separate dataframes
         future['direction'] = (future['diff'] > 0) * 1
+
+
 
         # Rename the columns for presentation
         future = future.rename(columns={'ds': 'Date', 'yhat': 'estimate', 'diff': 'change',
@@ -860,7 +868,7 @@ class Stocker():
         future_increase = future[future['direction'] == 1]
         future_decrease = future[future['direction'] == 0]
 
-        self.dbload_prophet(future, 4)
+
 
         # Print out the dates
         print('\nPredicted Increase: \n')
@@ -894,7 +902,7 @@ class Stocker():
         # Plot formatting
         plt.legend(loc = 2, prop={'size': 10});
         plt.xticks(rotation = '45')
-        plt.ylabel('Predicted Stock Price (US $)');
+        plt.ylabel('Predicted Price (US $)');
         plt.xlabel('Date'); plt.title('Predictions for %s' % self.symbol);
         plt.show()
 
@@ -988,7 +996,7 @@ class Stocker():
         plt.legend(prop={'size':10})
         plt.show();
 
-    def dbload_prophet(self, df, sim_id):
+    def dbload_prophet(self, df, sim_id=4):
         '''
             Loads given pandas dataframe (df) into CryptoProphet model in database.
         '''
@@ -997,21 +1005,29 @@ class Stocker():
         # Loop through data to create database record,
         for index, row in df.iterrows():
             # Delete if unique record exists for individual Date, Simulation, and Cryptocurrency. Assume all defaults remain (currency_quoted=USD, period_interval=1d)
+            CryptoProphet.objects.filter(
+                                        date = row['ds'],
+                                        simulation=simulation_obj,
+                                        crypto_traded=self.symbol
+                                        ).delete()
+            #Check to see if we have an existing CryptoCandle object so we can reference with ForeignKey
             try:
-                my_prophet = get_object_or_404(CryptoProphet,
-                                            date = row['Date'],
-                                            simulation=simulation_obj,
+                candle = CryptoCandle.objects.get(
+                                            search_trend__date = row['ds'],
+                                            period_interval='1d',
                                     crypto_traded=self.symbol)
             except:
-                pass
-            else:
-                my_prophet.delete()
-            prophet_record = CryptoProphet(date=row['Date'],
+                candle = None
+
+            prophet_record = CryptoProphet(date=row['ds'],
                                     simulation= simulation_obj,
                                     crypto_traded=self.symbol,
-                                    price_close=row['estimate'],
-                                    price_upper=row['upper'],
-                                    price_lower=row['lower'],
-                                    price_change=row['change'],
+                                    price_close=row['yhat'],
+                                    price_upper=row['yhat_upper'],
+                                    price_lower=row['yhat_lower'],
+                                    price_change=row['diff'],
+                                    crypto_candle=candle
                                     )
             prophet_record.save()
+
+

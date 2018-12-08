@@ -131,15 +131,18 @@ class CryptoProphet(models.Model):
         Attributes:
             date (date): date of prediction
             simulation (Simulation): Simulation model being used
+            crypto_candle(CryptoCandle): related CryptoCandle if CryptoProphet object is in the past.
             crypto_traded (str): cryptocurrency being tracked
             currency_quoted (str): currency used for the prices
             period_interval (str): Time interval of the candle
             period_close (dec): predicted price in currency_quoted
             trend_ratio (dec): ratio of buy_bitcoin/btc_usd predicted
+            update_timestamp (datetime): when record was created in this database
 
     '''
     date = models.DateField()
     simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
+    crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE, null=True)
     crypto_traded = models.CharField(max_length=3)
     currency_quoted = models.CharField(max_length=3, default='USD')
     period_interval = models.CharField(max_length=3, default='1d')
@@ -148,6 +151,7 @@ class CryptoProphet(models.Model):
     price_lower = models.DecimalField(max_digits=25, decimal_places=10, null=True)
     price_change = models.DecimalField(max_digits=25, decimal_places=10, null=True)
     trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
+    update_timestamp = models.DateTimeField(default=timezone.now())
 
     def __str__(self):
         return f"{self.date} | {self.crypto_traded} | {self.simulation}"
