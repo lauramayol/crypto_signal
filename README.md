@@ -1,5 +1,5 @@
 # Bitcoin Signal
-*Release 1.1*
+*Release 2.0*
 
 The goal of this project is to provide an API that recommends Buy/Sell/Hold of Bitcoin at any given time to maximize profitability.
 
@@ -7,19 +7,10 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ## Features
 
 #### This release
-- [x] Switch to SQLite database for easier sharing.
-- [x] Use [graphical analysis](https://public.tableau.com/profile/laura.mayol.vargas#!/vizhome/CryptoSignal1_0/BitcoinBUYSELLmodel) to see how well the current buy/sell recommendations are performing.
-- [x] Released Hindisght simulation (best case scenario).
-    - BUY: When next day close price increases.
-    - SELL: When next day close price decreases.
-- [x] Released Version 1.1 simulation (modified price parameter).
-    - BUY:
-        1. BTC price closes more than 1% above the prior day’s close price.
-        2. Search terms of “Buy Bitcoin” to “BTC USD” ratio is higher than 35% (Google Trends).
-    - SELL: When price and ratio do not meet BUY requirements.
-- [x] Home page created at root path that lists the simulations available and links to visualization.
+- [x] Price prediction is here! Adapted Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
 
 #### Next release
+- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ## Running project locally
@@ -133,6 +124,8 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 
 ### 2.0 release
 ##### Goal: Incorporate ML
+- [x] Adapt Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
+- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ### 3.0 release

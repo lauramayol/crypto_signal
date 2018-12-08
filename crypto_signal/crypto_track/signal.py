@@ -1,4 +1,4 @@
-from crypto_track.models import CryptoCandle, SignalSimulation, Simulation
+from crypto_track.models import CryptoCandle, SignalSimulation, Simulation, CryptoProphet
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from crypto_track.transaction import BankTransaction
@@ -83,7 +83,7 @@ class Signal():
         SignalSimulation.objects.filter(simulation=self.simulation_obj).delete()
 
         # The only time we want to see the future first is when we are determining hindsight simulations.
-        if self.simulation_id == 2:
+        if self.simulation_id in [2, 4]:
             loop_candles = self.candle_subset.order_by('-period_start_timestamp')
         else:
             loop_candles = self.candle_subset.order_by('period_start_timestamp')
@@ -123,7 +123,9 @@ class Signal():
         if self.simulation_id in [1, 3]:
             calc_signal = self.calculate_signal_v1(candle, compare_candle, p_default[self.simulation_id])
         elif self.simulation_id == 2:
-            calc_signal = self.calculate_signal_actual(candle, compare_candle)
+            calc_signal = self.calculate_signal_hindsight(candle, compare_candle.period_close)
+        elif self.simulation_id == 4:
+            calc_signal = self.calculate_signal_prophet(compare_candle)
         else:
             calc_signal = ""
 
@@ -172,7 +174,7 @@ class Signal():
 
         return price_diff, my_trend_ratio
 
-    def calculate_signal_actual(self, candle, next_candle):
+    def calculate_signal_hindsight(self, candle, next_candle_price):
         '''
             Calculates Hindsight version of signal:
             BUY signal:
@@ -180,12 +182,53 @@ class Signal():
             SELL signal:
                 -- Next candle price close is lower (sell at peak).
         '''
-        if candle.period_close > next_candle.period_close:
+        if candle.period_close > next_candle_price:
             calc_signal = "SELL"
-        elif candle.period_close < next_candle.period_close:
+        elif candle.period_close < next_candle_price:
             calc_signal = "BUY"
         else:
             # Hold signal from prior day. Note: Since ideally we do not want HOLD, need to update code to copy BUY/SELL from prior day.
             calc_signal = "HOLD"
 
         return calc_signal
+
+    def calculate_signal_prophet(self, next_candle):
+        print(next_candle)
+        my_prophet = get_object_or_404(CryptoProphet,
+                                       crypto_candle=next_candle,
+                                       simulation=self.simulation_obj)
+
+        print(my_prophet.price_change)
+        if float(my_prophet.price_change) < 0:
+            calc_signal = "SELL"
+        elif float(my_prophet.price_change) > 0:
+            calc_signal = "BUY"
+        else:
+            # Hold signal from prior day. Note: Since ideally we do not want HOLD, need to update code to copy BUY/SELL from prior day.
+            calc_signal = "HOLD"
+
+        return calc_signal
+
+
+class OriginalSignal(Signal):
+
+    def __init__(self, currency, simulation_id):
+        Signal.__init__(self, currency=currency, simulation_id=simulation_id)
+
+    def calculate_signal():
+        pass
+
+
+class HindsightSignal(Signal):
+
+    simulation_id = 2
+
+    def __init__(self, currency):
+        Signal.__init__(self, currency=currency, simulation_id=simulation_id)
+
+
+class ProphetSignal(Signal):
+    simulation_id = 4
+
+    def __init__(self, currency):
+        Signal.__init__(self, currency=currency, simulation_id=simulation_id)
