@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 import datetime
+from crypto_track.stocker import Stocker
 
 
 def get_nomics(request, query_currency):
@@ -80,3 +81,18 @@ def append_trend_dates(request, candle):
         candle.search_trend = my_trend
         candle.save()
         return True
+
+
+def predict_price(user_currency, prediction_days):
+    # Initialize Stocker object
+    crypto_stocker = Stocker(user_currency)
+
+    # Change defaults as analyzed in Stocker Prediction Usage.ipynb notebook.
+    crypto_stocker.training_years = 6
+    crypto_stocker.weekly_seasonality = True
+    crypto_stocker.changepoint_prior_scale = 0.4
+
+    # Create predictions and load table.
+    return_message = crypto_stocker.dbload_prophet(days=prediction_days)
+
+    return return_message

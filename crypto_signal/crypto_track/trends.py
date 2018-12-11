@@ -42,3 +42,6 @@ class CryptoTrends:
                 trend_record.trend_ratio = trend_record.buy_bitcoin / trend_record.btc_usd
             trend_record.save()
         return "Accepted"
+
+    def load_prophet(self):
+        pass

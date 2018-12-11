@@ -2,6 +2,7 @@ from crypto_track.models import CryptoCandle, SignalSimulation, Simulation, Cryp
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from crypto_track.transaction import BankTransaction
+import crypto_track.crypto_data
 
 
 class Signal():
@@ -29,6 +30,7 @@ class Signal():
         self.currency_quoted = currency_quoted
         self.period_interval = period_interval
         self.data_source_short = data_source_short
+        self.prediction_days = 30
 
         # specify the subset we will be working with
         # remove search_trend filter if we choose to not use Google Trends
@@ -85,6 +87,8 @@ class Signal():
         # The only time we want to see the future first is when we are determining hindsight simulations.
         if self.simulation_id in [2, 4]:
             loop_candles = self.candle_subset.order_by('-period_start_timestamp')
+            if self.simulation_id == 4:
+                crypto_data.predict_price(self.currency, self.prediction_days)
         else:
             loop_candles = self.candle_subset.order_by('period_start_timestamp')
 
@@ -208,27 +212,3 @@ class Signal():
             calc_signal = "HOLD"
 
         return calc_signal
-
-
-class OriginalSignal(Signal):
-
-    def __init__(self, currency, simulation_id):
-        Signal.__init__(self, currency=currency, simulation_id=simulation_id)
-
-    def calculate_signal():
-        pass
-
-
-class HindsightSignal(Signal):
-
-    simulation_id = 2
-
-    def __init__(self, currency):
-        Signal.__init__(self, currency=currency, simulation_id=simulation_id)
-
-
-class ProphetSignal(Signal):
-    simulation_id = 4
-
-    def __init__(self, currency):
-        Signal.__init__(self, currency=currency, simulation_id=simulation_id)

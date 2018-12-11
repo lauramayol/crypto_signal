@@ -1052,5 +1052,4 @@ class Stocker(Prophet):
                                     crypto_candle=candle
                                     )
             prophet_record.save()
-
-
+        return f"Loaded {df.ds.count()} predictions."

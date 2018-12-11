@@ -8,6 +8,7 @@ from crypto_track.models import CryptoCandle, Simulation
 from crypto_track.signal import Signal
 from . import crypto_data
 from crypto_track.track_exception import TrackException
+import pandas as pd
 
 bad_request_default = {"status_code": 400, "status": "Bad Request",
                        "message": "Please submit a valid request."}
@@ -153,14 +154,11 @@ def update_signal(request, simulation_id=""):
             if user_currency == "":
                 raise TrackException("Please specify a currency in your request.", "Bad Request")
 
-            elif simulation_id == "":
-                # If we do not specify a simulation, all will be updated based on the Simulations table.
-                for sim in Simulation.objects.all():
-                    my_signal = Signal(currency=user_currency, simulation_id=sim.id)
-                    confirm_message += my_signal.update_signal()
             else:
-
                 my_signal = Signal(currency=user_currency, simulation_id=simulation_id)
+                # Get prediction days from request (this is necessary only starting with sim id 4)
+                my_signal.prediction_days = int(request.GET.get('days', '30'))
+
                 confirm_message = my_signal.update_signal()
 
         except Exception as exc:
@@ -174,5 +172,35 @@ def update_signal(request, simulation_id=""):
             return JsonResponse({"status_code": 202, "status": "Accepted",
                                  "message": confirm_message}
                                 )
+    else:
+        return JsonResponse(bad_request_default)
+
+
+def load_simulations(request):
+    '''
+        Accepts a POST request to load crypto_track_simulation table from excel file crypto_signal/crypto_track/CryptoSimulations.xlsx
+    '''
+    if request.method == "POST":
+        # Load list from file
+        sim_list = pd.read_excel('crypto_signal/crypto_track/CryptoSimulations.xlsx', index_col='id')
+        # Sort based on ID
+        sim_list = sim_list.sort_values(by=['id'])
+
+        # First, delete all current objects
+        Simulation.objects.all().delete()
+
+        # Create a Simulation record for each row in file
+        for index, row in sim_list.iterrows():
+            sim_record = Simulation(id=index,
+                                    name=row['name'],
+                                    description=row['description'],
+                                    url=row['url']
+                                    )
+            sim_record.save()
+
+        confirm_message = f"Loaded {sim_list.name.count()} simulations."
+        return JsonResponse({"status_code": 202, "status": "Accepted",
+                             "message": confirm_message}
+                            )
     else:
         return JsonResponse(bad_request_default)
