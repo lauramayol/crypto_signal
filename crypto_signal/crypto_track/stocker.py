@@ -6,7 +6,6 @@ import numpy as np
 import fbprophet
 import pytrends
 from pytrends.request import TrendReq
-from crypto_track.signal import Signal
 from crypto_track.models import CryptoProphet, Simulation, CryptoCandle
 from django.shortcuts import get_object_or_404
 
@@ -852,12 +851,20 @@ class Stocker(Prophet):
         # Symbol is used for labeling plots
         self.symbol = ticker
 
+
         # Retrieval the financial data
+        # first, initialize variables
+        self.period_interval = '1d'
+        self.currency_quoted = 'USD'
+        self.source = source
         try:
             # simulation_id = 4 is prophet simulation
-            my_signal = Signal(currency=ticker, simulation_id=4, data_source_short=source)
-            stock_qs = my_signal.candle_subset
-            stock = pd.DataFrame(list(stock_qs.values()))
+            my_candle = CryptoCandle.objects.filter(crypto_traded=self.symbol,
+                                                    currency_quoted=self.currency_quoted,
+                                                    period_interval=self.period_interval,
+                                                    data_source__contains=self.source
+                                                         )
+            stock = pd.DataFrame(list(my_candle.values()))
 
         except Exception as e:
             print('Error Retrieving Data.')

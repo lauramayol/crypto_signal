@@ -2,7 +2,7 @@ from crypto_track.models import CryptoCandle, SignalSimulation, Simulation, Cryp
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from crypto_track.transaction import BankTransaction
-import crypto_track.crypto_data
+from . import crypto_data
 
 
 class Signal():
