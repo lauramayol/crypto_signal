@@ -8,9 +8,9 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 
 #### This release
 - [x] Price prediction is here! Adapted Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
+- [x] Export flat files from sqlitedb to use in Tableau.
 
 #### Next release
-- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ## Running project locally
@@ -61,7 +61,8 @@ python crypto_signal/manage.py runserver
 | Root path | `/`|
 | Signal | `/<simulation_id>/signal`|
 | Load Bitcoin data | `/load/nomics`|
-| Load trends data | `/load/trends`|
+| Load Google trends data | `/load/trends`|
+| Load Simulation list | `/load/simulations`|
 | Update candles foreign keys | `/update/candles`|
 | Update BUY/SELL signal | `/update/<simulation_id>/signal`|
 
@@ -74,6 +75,7 @@ python crypto_signal/manage.py runserver
 | `GET` | `/<simulation_id>/signal` | `?currency=BTC&date=yyyy-mm-dd` | Retrieves the Buy/Sell signal from specified simulation in database for given currency (currently only Bitcoin (BTC) available and historical date (Jan 2013-Oct 2018). | `/1/signal?currency=BTC&date=2018-08-15` |
 | `POST` | `/load/nomics` | `?currency=BTC&start=yyyy-mm-dd&end=yyyy-mm-dd` | Full load of candle (OLHCV metrics) from Nomics.com with given currency and start/end dates (optional). Currently defaulted to daily (1d) intervals and start/end is blank (all-time). | `/load/nomics?currency=BTC&start=2018-01-01` |
 | `POST` | `/load/trends` | `?currency=BTC` | Full load of Google trends Interest Over Time metrics using pytrends library. We are comparing the Google search terms "buy bitcoin" and "BTC USD" Worldwide, and pulling the daily data on 180-day interval starting with today down to 2013.  | `/load/trends?currency=BTC` |
+| `POST` | `/load/simulations` | `n/a` | Initial loading list of simulations from flat file.  | `/load/simulations` |
 | `PATCH` | `/update/candles` | `?currency=BTC` | Updates foreign key relationship of candle to trend model.  | `/update/candles?currency=BTC` |
 | `PATCH` | `/update/<simulation_id>/signal` | `?currency=BTC` | Updates BUY/SELL signal for each candle based on specified simulation.  | `/update/1/signal?currency=BTC` |
 
@@ -125,7 +127,6 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ### 2.0 release
 ##### Goal: Incorporate ML
 - [x] Adapt Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
-- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ### 3.0 release

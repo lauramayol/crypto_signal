@@ -67,9 +67,10 @@ class Simulation(models.Model):
     '''
         Attritbutes:
             name (str): short name of signal simulation.
-            description (str): long description of simulation.
+            descrition (str): long description of simulation.
     '''
 
+    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50)
     description = models.CharField(max_length=300)
     url = models.CharField(max_length=300, null=True)
@@ -130,6 +131,7 @@ class CryptoProphet(models.Model):
 
         Attributes:
             date (date): date of prediction
+            object_type(str): what is the value we are predicting
             simulation (Simulation): Simulation model being used
             crypto_candle(CryptoCandle): related CryptoCandle if CryptoProphet object is in the past.
             crypto_traded (str): cryptocurrency being tracked
@@ -141,17 +143,17 @@ class CryptoProphet(models.Model):
 
     '''
     date = models.DateField()
+    object_type = models.CharField(max_length=50)
     simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
     crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE, null=True)
     crypto_traded = models.CharField(max_length=3)
     currency_quoted = models.CharField(max_length=3, default='USD')
     period_interval = models.CharField(max_length=3, default='1d')
-    price_close = models.DecimalField(max_digits=25, decimal_places=10, null=True)
-    price_upper = models.DecimalField(max_digits=25, decimal_places=10, null=True)
-    price_lower = models.DecimalField(max_digits=25, decimal_places=10, null=True)
-    price_change = models.DecimalField(max_digits=25, decimal_places=10, null=True)
-    trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
+    metric_value = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    upper = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    lower = models.DecimalField(max_digits=25, decimal_places=10, null=True)
+    change = models.DecimalField(max_digits=25, decimal_places=10, null=True)
     update_timestamp = models.DateTimeField(default=timezone.now())
 
     def __str__(self):
-        return f"{self.date} | {self.crypto_traded} | {self.simulation}"
+        return f"{self.object_type} | {self.date} | {self.crypto_traded} | {self.simulation}"
