@@ -32,9 +32,14 @@ class DataExport():
         model_data = list(qs)
         df = pd.DataFrame(model_data)
         if model_name == 'PyTrends':
-            df.index = df.date
+            index_name = 'date'
         else:
-            df.index = df.id
+            index_name = 'id'
+        df.set_index(index_name, inplace=True)
+        # if model_name == 'PyTrends':
+        #     df.index = df.date
+        # else:
+        #     df.index = df.id
         df.to_csv(file_name, quoting=3)
         return f"Successfully saved file {file_name}."
 

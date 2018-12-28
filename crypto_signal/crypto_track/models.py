@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django_pandas.managers import DataFrameManager
 
 
 class PyTrends(models.Model):
@@ -21,8 +20,6 @@ class PyTrends(models.Model):
     btc_usd = models.IntegerField(null=True)
     is_partial = models.BooleanField(default=False)
     trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
-
-
 
     def __str__(self):
         return f"{self.date}"

@@ -91,8 +91,6 @@ class Signal():
             loop_candles = self.candle_subset.order_by('-period_start_timestamp')
             if self.simulation_id in [4, 5]:
                 conditional_message += ' ' + self.predict_price()
-                if self.simulation_id == 5:
-                    conditional_message += ' ' + self.predict_trend()
         else:
             loop_candles = self.candle_subset.order_by('period_start_timestamp')
 
@@ -134,6 +132,11 @@ class Signal():
             calc_signal = self.calculate_signal_hindsight(candle, compare_candle.period_close)
         elif self.simulation_id == 4:
             calc_signal = self.calculate_signal_prophet(compare_candle)
+        elif self.simulation_id == 5:
+            calc_signal = self.calculate_signal_prophet(compare_candle)
+            # Signal #5 is almost equivalent to #4 but takes into account Google Trend ratio
+            if candle.search_trend.trend_ratio and candle.search_trend.trend_ratio > 0.35:
+                calc_signal = "BUY"
         else:
             calc_signal = ""
 

@@ -184,7 +184,7 @@ def load_simulations(request):
     '''
     if request.method == "POST":
         # Load list from file
-        sim_list = pd.read_csv('crypto_track_simulation.csv', index_col='id')
+        sim_list = pd.read_csv('crypto_track_Simulation.csv', index_col='id')
         # Sort based on ID
         sim_list = sim_list.sort_values(by=['id'])
 

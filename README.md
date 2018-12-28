@@ -8,9 +8,9 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 
 #### This release
 - [x] Price prediction is here! Adapted Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
+- [x] Export flat files from sqlitedb to use in Tableau.
 
 #### Next release
-- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ## Running project locally
@@ -123,7 +123,6 @@ The goal of this project is to provide an API that recommends Buy/Sell/Hold of B
 ### 2.0 release
 ##### Goal: Incorporate ML
 - [x] Adapt Stocker class to predict Bitcoin price. Please see Stocker Prediction Usage.ipynb notebook found in this repository.
-- [ ] Incorporate Google trend prediction using fbprophet package.
 - [ ] Incorporate OHLCV (open, high, low, close,volume) trends with ML algorithm.
 
 ### 3.0 release
