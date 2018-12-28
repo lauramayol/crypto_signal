@@ -6,7 +6,7 @@ import numpy as np
 import fbprophet
 import pytrends
 from pytrends.request import TrendReq
-from crypto_track.models import CryptoProphet, Simulation, CryptoCandle
+from crypto_track.models import CryptoCandle
 from django.shortcuts import get_object_or_404
 
 # matplotlib pyplot for plotting
@@ -362,24 +362,9 @@ class Prophet():
 
     # Basic prophet model for specified number of days
     def create_prophet_model(self, days=0, resample=False):
-
         self.reset_plot()
 
-        model = self.create_model()
-
-        # Fit on the stock history for self.training_years number of years
-        data_history = self.df_history[self.df_history['Date'] > (self.max_date - pd.DateOffset(years = self.training_years))]
-
-        if resample:
-            data_history = self.resample(data_history)
-
-        model.fit(data_history)
-
-        # Make and predict for next year with future dataframe
-        future = model.make_future_dataframe(periods = days, freq='D')
-        future = model.predict(future)
-
-        future['diff'] = future['yhat'].diff()
+        future, data_history, model = self.predict_future_df(days=days, resample=resample)
 
         # self.dbload_prophet(future)
 
@@ -552,15 +537,7 @@ class Prophet():
     def changepoint_date_analysis(self, search=None):
         self.reset_plot()
 
-        model = self.create_model()
-
-        # Use past self.training_years years of data
-        train = self.df_history[self.df_history['Date'] > (self.max_date - pd.DateOffset(years = self.training_years))]
-        model.fit(train)
-
-        # Predictions of the training data (no future periods)
-        future = model.make_future_dataframe(periods=0, freq='D')
-        future = model.predict(future)
+        future, train, model = self.predict_future_df(days=0)
 
         train = pd.merge(train, future[['ds', 'yhat']], on = 'ds', how = 'inner')
 
@@ -669,15 +646,16 @@ class Prophet():
             plt.xlabel('Date'); plt.ylabel('Normalized Values'); plt.title('%s Values and Search Frequency for %s' % (self.value_title, search))
             plt.show()
 
-    # Predict the future price for a given range of days
-    def predict_future(self, days=30):
-
+    def predict_future_df(self, days=30, resample=False):
         # Use past self.training_years years for training
-        train = self.df_history[self.df_history['Date'] > (max(self.df_history['Date']) - pd.DateOffset(years=self.training_years))]
+        history = self.df_history[self.df_history['Date'] > (self.max_date - pd.DateOffset(years=self.training_years))]
+
+        if resample:
+            history = self.resample(history)
 
         model = self.create_model()
 
-        model.fit(train)
+        model.fit(history)
 
         # Future dataframe with specified number of days to predict
         future = model.make_future_dataframe(periods=days, freq='D')
@@ -686,12 +664,16 @@ class Prophet():
         # Calculate whether increase or not
         future['diff'] = future['yhat'].diff()
 
-        my_future = future.copy()
+        return future, history, model
+
+    # Predict the future price for a given range of days
+    def predict_future(self, days=30):
+
+        # Future dataframe with specified number of days to predict
+        future, train, model = self.predict_future_df(days)
 
         # Only concerned with future dates
-        future = my_future[my_future['ds'] >= max(self.df_history['Date'])]
-
-
+        future = future[future['ds'] >= max(self.df_history['Date'])]
 
         future = future.dropna()
 
@@ -745,7 +727,7 @@ class Prophet():
         plt.xlabel('Date'); plt.title('Predictions for %s' % self.value_title);
         plt.show()
 
-        return my_future;
+        return future;
 
     def changepoint_prior_validation(self, start_date=None, end_date=None,changepoint_priors = [0.001, 0.05, 0.1, 0.2]):
 
@@ -843,7 +825,7 @@ class Prophet():
 class Stocker(Prophet):
 
     # Initialization requires a ticker symbol
-    def __init__(self, ticker, source='Nomics'):
+    def __init__(self, ticker, source='Nomics', currency_quoted = 'USD'):
 
         # Enforce capitalization
         ticker = ticker.upper()
@@ -855,7 +837,7 @@ class Stocker(Prophet):
         # Retrieval the financial data
         # first, initialize variables
         self.period_interval = '1d'
-        self.currency_quoted = 'USD'
+        self.currency_quoted = currency_quoted
         self.source = source
         try:
             # simulation_id = 4 is prophet simulation
@@ -1023,40 +1005,3 @@ class Stocker(Prophet):
             plt.grid(alpha=0.2);
             plt.show()
 
-    def dbload_prophet(self, days=30, sim_id=4):
-        '''
-            Loads given pandas dataframe (df) into CryptoProphet model in database.
-        '''
-
-        simulation_obj = get_object_or_404(Simulation, pk=sim_id)
-
-        df = self.predict_future(days)
-
-        # Loop through data to create database record,
-        for index, row in df.iterrows():
-            # Delete if unique record exists for individual Date, Simulation, and Cryptocurrency. Assume all defaults remain (currency_quoted=USD, period_interval=1d)
-            CryptoProphet.objects.filter(
-                                        date = row['ds'],
-                                        simulation=simulation_obj,
-                                        crypto_traded=self.symbol
-                                        ).delete()
-            #Check to see if we have an existing CryptoCandle object so we can reference with ForeignKey
-            try:
-                candle = CryptoCandle.objects.get(
-                                            search_trend__date = row['ds'],
-                                            period_interval='1d',
-                                    crypto_traded=self.symbol)
-            except:
-                candle = None
-
-            prophet_record = CryptoProphet(date=row['ds'],
-                                    simulation= simulation_obj,
-                                    crypto_traded=self.symbol,
-                                    price_close=row['yhat'],
-                                    price_upper=row['yhat_upper'],
-                                    price_lower=row['yhat_lower'],
-                                    price_change=row['diff'],
-                                    crypto_candle=candle
-                                    )
-            prophet_record.save()
-        return f"Loaded {df.ds.count()} predictions."

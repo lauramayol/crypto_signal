@@ -1,6 +1,8 @@
 from pytrends.request import TrendReq
-import pandas
+import pandas as pd
+import sqlite3
 from crypto_track.models import PyTrends
+from crypto_track.stocker import Prophet
 
 
 class CryptoTrends:
@@ -13,6 +15,7 @@ class CryptoTrends:
         '''
         self.search_val1 = search_val1
         self.search_val2 = search_val2
+        self.currency = 'BTC'
 
     def get_trends(self, period):
         '''
@@ -42,6 +45,3 @@ class CryptoTrends:
                 trend_record.trend_ratio = trend_record.buy_bitcoin / trend_record.btc_usd
             trend_record.save()
         return "Accepted"
-
-    def load_prophet(self):
-        pass

@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django_pandas.managers import DataFrameManager
 
 
 class PyTrends(models.Model):
@@ -20,6 +21,8 @@ class PyTrends(models.Model):
     btc_usd = models.IntegerField(null=True)
     is_partial = models.BooleanField(default=False)
     trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
+
+
 
     def __str__(self):
         return f"{self.date}"
@@ -131,6 +134,7 @@ class CryptoProphet(models.Model):
 
         Attributes:
             date (date): date of prediction
+            object_type(str): what is the value we are predicting
             simulation (Simulation): Simulation model being used
             crypto_candle(CryptoCandle): related CryptoCandle if CryptoProphet object is in the past.
             crypto_traded (str): cryptocurrency being tracked

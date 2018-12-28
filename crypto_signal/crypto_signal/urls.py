@@ -32,4 +32,5 @@ urlpatterns = [
     path('update/candles', views.update_candles, name='update_candles'),
     path('update/<int:simulation_id>/signal', views.update_signal, name='update_signal'),
     path('load/simulations', views.load_simulations, name='load_simulations'),
+    path('export', views.data_export, name='data_export'),
 ]

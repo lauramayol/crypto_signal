@@ -2,7 +2,8 @@ from crypto_track.models import CryptoCandle, SignalSimulation, Simulation, Cryp
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from crypto_track.transaction import BankTransaction
-from . import crypto_data
+from crypto_track.stocker import Stocker
+import pandas
 
 
 class Signal():
@@ -30,7 +31,7 @@ class Signal():
         self.currency_quoted = currency_quoted
         self.period_interval = period_interval
         self.data_source_short = data_source_short
-        self.prediction_days = 30
+        self.prediction_days = 90
 
         # specify the subset we will be working with
         # remove search_trend filter if we choose to not use Google Trends
@@ -80,15 +81,18 @@ class Signal():
         # initiate variables to be used in loop
         prior_candle = None
         x = 0
+        conditional_message = ''
 
         # Next, delete the existing simulation
         SignalSimulation.objects.filter(simulation=self.simulation_obj).delete()
 
         # The only time we want to see the future first is when we are determining hindsight simulations.
-        if self.simulation_id in [2, 4]:
+        if self.simulation_id in [2, 4, 5]:
             loop_candles = self.candle_subset.order_by('-period_start_timestamp')
-            if self.simulation_id == 4:
-                crypto_data.predict_price(self.currency, self.prediction_days)
+            if self.simulation_id in [4, 5]:
+                conditional_message += ' ' + self.predict_price()
+                if self.simulation_id == 5:
+                    conditional_message += ' ' + self.predict_trend()
         else:
             loop_candles = self.candle_subset.order_by('period_start_timestamp')
 
@@ -115,7 +119,7 @@ class Signal():
         transaction_sim = BankTransaction(self.candle_subset, self.simulation_obj)
         transaction_sim.transaction_history()
 
-        return f"Inserted {x} records on {timezone.now()}."
+        return f"Inserted {x} signal records on {timezone.now()}.{conditional_message}"
 
     def calculate_signal(self, candle, compare_candle):
         '''
@@ -197,18 +201,102 @@ class Signal():
         return calc_signal
 
     def calculate_signal_prophet(self, next_candle):
-        print(next_candle)
         my_prophet = get_object_or_404(CryptoProphet,
                                        crypto_candle=next_candle,
                                        simulation=self.simulation_obj)
 
-        print(my_prophet.price_change)
-        if float(my_prophet.price_change) < 0:
+        if float(my_prophet.change) < 0:
             calc_signal = "SELL"
-        elif float(my_prophet.price_change) > 0:
+        elif float(my_prophet.change) > 0:
             calc_signal = "BUY"
         else:
             # Hold signal from prior day. Note: Since ideally we do not want HOLD, need to update code to copy BUY/SELL from prior day.
             calc_signal = "HOLD"
 
         return calc_signal
+
+    def predict_price(self):
+        # Initialize Stocker object
+        crypto_stocker = Stocker(ticker=self.currency, currency_quoted=self.currency_quoted)
+
+        # Change defaults as analyzed in Stocker Prediction Usage.ipynb notebook.
+        crypto_stocker.training_years = 6
+        crypto_stocker.weekly_seasonality = True
+        crypto_stocker.changepoint_prior_scale = 0.4
+        # Create predictions
+        future, train, model = crypto_stocker.predict_future_df(self.prediction_days)
+
+        # Create predictions and load table.
+        return_message = self.dbload_prophet(df=future, object_type='CryptoCandle.period_close')
+
+        return return_message
+
+    def dbload_prophet(self, df, object_type):
+        '''
+            Loads given pandas dataframe (df) into CryptoProphet model in database.
+        '''
+
+        # Loop through data to create database record,
+        for index, row in df.iterrows():
+            # Delete if unique record exists
+            CryptoProphet.objects.filter(
+                date=row['ds'],
+                object_type=object_type,
+                simulation=self.simulation_obj,
+                crypto_traded=self.currency,
+                currency_quoted=self.currency_quoted,
+                period_interval=self.period_interval
+            ).delete()
+            # Check to see if we have an existing CryptoCandle object so we can reference with ForeignKey
+            try:
+                candle = CryptoCandle.objects.get(
+                    search_trend__date=row['ds'],
+                    currency_quoted=self.currency_quoted,
+                    period_interval=self.period_interval,
+                    crypto_traded=self.currency)
+            except:
+                candle = None
+
+            prophet_record = CryptoProphet(date=row['ds'],
+                                           object_type=object_type,
+                                           simulation=self.simulation_obj,
+                                           crypto_traded=self.currency,
+                                           currency_quoted=self.currency_quoted,
+                                           period_interval=self.period_interval,
+                                           metric_value=row['yhat'],
+                                           upper=row['yhat_upper'],
+                                           lower=row['yhat_lower'],
+                                           change=row['diff'],
+                                           crypto_candle=candle
+                                           )
+            prophet_record.save()
+        return f"Loaded {df.ds.count()} predictions."
+
+    def predict_trend(self):
+        object_type = 'PyTrends.trend_ratio'
+
+        # Pull and prep data
+        conn = sqlite3.connect("db.sqlite3")
+        df = pd.read_sql_query("select date as ds, btc_usd, buy_bitcoin, trend_ratio from crypto_track_pytrends;", conn)
+        df['y'] = df['trend_ratio']
+        df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
+
+        # Get prior 'y' value to fill in nan
+        df['y-1'] = df.y.shift(1)
+        df['y_nan'] = df.y.isna()
+        df.y.fillna(df['y-1'], inplace=True)
+        df.drop(['y-1'], axis=1, inplace=True)
+
+        # Instantiate a Prophet object
+        future_trend = Prophet(df, 'Trend Ratio')
+        # Change default attributes as analyzed in Trend Prediction.ipynb notebook.
+        future_trend.weekly_seasonality = True
+        future_trend.training_years = 6
+        future_trend.changepoint_prior_scale = 0.05
+
+        future, train, model = future_trend.predict_future_df(days)
+
+        # Create predictions and load table.
+        return_message = self.dbload_prophet(df=future, object_type=object_type)
+
+        return return_message
