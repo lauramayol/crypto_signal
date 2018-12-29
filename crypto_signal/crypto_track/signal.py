@@ -38,7 +38,7 @@ class Signal():
         self.candle_subset = CryptoCandle.objects.filter(crypto_traded=self.currency,
                                                          currency_quoted=self.currency_quoted,
                                                          period_interval=self.period_interval,
-                                                         search_trend__isnull=False,
+                                                         # search_trend__isnull=False,
                                                          data_source__contains=self.data_source_short
                                                          )
         self.simulation_obj = get_object_or_404(Simulation, pk=self.simulation_id)
@@ -92,7 +92,7 @@ class Signal():
             if self.simulation_id in [4, 5]:
                 conditional_message += ' ' + self.predict_price()
         else:
-            loop_candles = self.candle_subset.order_by('period_start_timestamp')
+            loop_candles = self.candle_subset.filter(search_trend__isnull=False).order_by('period_start_timestamp')
 
         for candle in loop_candles:
             # For initial candle, we will initialize the simulation and bank and do nothing else.
@@ -103,9 +103,13 @@ class Signal():
                 my_sim.save()
 
             else:
-                candle_delta = candle.search_trend.date - prior_candle.search_trend.date
+                days_diff = 0
+                if candle.search_trend and prior_candle.search_trend:
+                    candle_delta = candle.search_trend.date - prior_candle.search_trend.date
+                    days_diff = candle_delta.days
+
                 # below i want to make sure my delta is working along with my period interval. This will need to be updated once we introduce hourly intervals.
-                if self.period_interval == "1d" and abs(candle_delta.days) == 1:
+                if ((self.period_interval == "1d" and days_diff == 1) or self.simulation_id in [2, 4, 5]):
 
                     sim_result = self.calculate_signal(candle, prior_candle)
                     # counting our success instances
@@ -135,8 +139,9 @@ class Signal():
         elif self.simulation_id == 5:
             calc_signal = self.calculate_signal_prophet(compare_candle)
             # Signal #5 is almost equivalent to #4 but takes into account Google Trend ratio
-            if candle.search_trend.trend_ratio and candle.search_trend.trend_ratio > 0.35:
-                calc_signal = "BUY"
+            if candle.search_trend:
+                if candle.search_trend.trend_ratio and candle.search_trend.trend_ratio > 0.35:
+                    calc_signal = "BUY"
         else:
             calc_signal = ""
 
@@ -181,8 +186,10 @@ class Signal():
         # for #3 sim we are using % difference
         elif self.simulation_id == 3:
             price_diff = (candle.period_close - prior_period_candle.period_close) / prior_period_candle.period_close
-        my_trend_ratio = candle.search_trend.trend_ratio
-
+        if candle.search_trend:
+            my_trend_ratio = candle.search_trend.trend_ratio
+        else:
+            my_trend_ratio = None
         return price_diff, my_trend_ratio
 
     def calculate_signal_hindsight(self, candle, next_candle_price):
@@ -204,17 +211,21 @@ class Signal():
         return calc_signal
 
     def calculate_signal_prophet(self, next_candle):
-        my_prophet = get_object_or_404(CryptoProphet,
-                                       crypto_candle=next_candle,
-                                       simulation=self.simulation_obj)
-
-        if float(my_prophet.change) < 0:
-            calc_signal = "SELL"
-        elif float(my_prophet.change) > 0:
-            calc_signal = "BUY"
-        else:
-            # Hold signal from prior day. Note: Since ideally we do not want HOLD, need to update code to copy BUY/SELL from prior day.
+        try:
+            my_prophet = get_object_or_404(CryptoProphet,
+                                           crypto_candle=next_candle,
+                                           simulation=self.simulation_obj)
+        except:
             calc_signal = "HOLD"
+
+        else:
+            if float(my_prophet.change) < 0:
+                calc_signal = "SELL"
+            elif float(my_prophet.change) > 0:
+                calc_signal = "BUY"
+            else:
+                # Hold signal from prior day. Note: Since ideally we do not want HOLD, need to update code to copy BUY/SELL from prior day.
+                calc_signal = "HOLD"
 
         return calc_signal
 
