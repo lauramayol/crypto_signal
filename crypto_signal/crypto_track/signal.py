@@ -38,7 +38,6 @@ class Signal():
         self.candle_subset = CryptoCandle.objects.filter(crypto_traded=self.currency,
                                                          currency_quoted=self.currency_quoted,
                                                          period_interval=self.period_interval,
-                                                         # search_trend__isnull=False,
                                                          data_source__contains=self.data_source_short
                                                          )
         self.simulation_obj = get_object_or_404(Simulation, pk=self.simulation_id)
@@ -84,7 +83,8 @@ class Signal():
         conditional_message = ''
 
         # Next, delete the existing simulation
-        SignalSimulation.objects.filter(simulation=self.simulation_obj).delete()
+        SignalSimulation.objects.filter(simulation=self.simulation_obj,
+                                        crypto_candle__crypto_traded=self.currency).delete()
 
         # The only time we want to see the future first is when we are determining hindsight simulations.
         if self.simulation_id in [2, 4, 5]:
@@ -118,7 +118,7 @@ class Signal():
             prior_candle = candle
 
         # Once we have updated all signals, we can model transaction history.
-        transaction_sim = BankTransaction(self.candle_subset, self.simulation_obj)
+        transaction_sim = BankTransaction(self.candle_subset, self.simulation_obj, self.currency)
         transaction_sim.transaction_history()
 
         return f"Inserted {x} signal records on {timezone.now()}.{conditional_message}"

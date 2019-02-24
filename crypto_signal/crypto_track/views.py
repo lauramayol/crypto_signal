@@ -80,10 +80,11 @@ def load_ccxt(request):
 def load_trends(request):
     '''
         Used to populate PyTrends model from Google Trend data.
+        Note: For now we will use google trends for Bitcoin to compare with other currencies as well.
         sample: POST localhost:8000/load/trends?currency=BTC
     '''
 
-    if request.method == "POST" and request.GET.get('currency', '') == "BTC":
+    if request.method == "POST":
         my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
 
         end_date = datetime.datetime.now().date()
@@ -123,7 +124,7 @@ def update_candles(request):
     '''
     query_currency = request.GET.get('currency', '')
 
-    if request.method in ("POST", "PATCH") and query_currency == "BTC":
+    if request.method in ("POST", "PATCH"):
         x = 0
         for candle in CryptoCandle.objects.all():
             my_data = CryptoData(currency=query_currency, request=request)
