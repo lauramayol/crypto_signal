@@ -15,7 +15,6 @@ class CryptoTrends:
         '''
         self.search_val1 = search_val1
         self.search_val2 = search_val2
-        self.currency = 'BTC'
 
     def get_trends(self, period):
         '''

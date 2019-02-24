@@ -45,7 +45,9 @@ class CryptoData():
         # Read API
         historical_crypto_results = requests.get(final_url).json()
 
-        CryptoCandle.objects.all().delete()
+        CryptoCandle.objects.filter(crypto_traded=self.currency,
+                                    currency_quoted=self.currency_quoted,
+                                    period_interval=self.period_interval).delete()
         x = 0
         for record in historical_crypto_results:
             try:
