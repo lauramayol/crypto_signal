@@ -44,10 +44,7 @@ def signal(request, simulation_id):
         # Get date from request. Date is optional
         user_date = request.GET.get('date', search_date)
 
-        if user_date != "":
-            search_date = datetime.datetime.strptime(user_date, '%Y-%m-%d')
-
-        return_message = my_signal.get_signal(search_date)
+        return_message = my_signal.get_signal(user_date)
     except Exception as exc:
         return JsonResponse({"status_code": 409,
                              "status": "Conflict",

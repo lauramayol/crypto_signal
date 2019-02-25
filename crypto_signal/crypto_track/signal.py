@@ -48,27 +48,55 @@ class Signal():
         '''
 
         # date is not required, if user does not specify then we provide the latest
-        if search_date == "":
-            my_candle = self.candle_subset.order_by('-period_start_timestamp')[0]
-        else:
+        if search_date:
             my_candle = get_object_or_404(self.candle_subset,
-                                          search_trend__date=search_date
+                                          period_start_timestamp__startswith=search_date
                                           )
+            # Check if there is a signal for th specified date
+            try:
+                my_signal = get_object_or_404(SignalSimulation,
+                                              crypto_candle=my_candle,
+                                              simulation=self.simulation_obj)
+            # We will still return a record if there is no signal because the user wants to see the data for a specific date. Signal details will just be blank.
+            except:
+                my_signal = None
+                comparison_period_date = None
+                comparison_period_close = None
+                trend_ratio = None
+                simulation_name = None
+                signal = None
+        # When there is no date specified, we will just get the latest Signal we have available.
+        else:
+            signal_subset = SignalSimulation.objects.filter(simulation=self.simulation_obj,
+                                                            signal__isnull=False,
+                                                            crypto_candle__crypto_traded=self.currency,
+                                                            crypto_candle__currency_quoted=self.currency_quoted,
+                                                            crypto_candle__period_interval=self.period_interval,
+                                                            crypto_candle__data_source__contains=self.data_source_short
+                                                            )
+            my_signal = signal_subset.order_by('-crypto_candle__period_start_timestamp')[0]
+            my_candle = my_signal.crypto_candle
 
-        my_signal = get_object_or_404(SignalSimulation,
-                                      crypto_candle=my_candle,
-                                      simulation=self.simulation_obj)
+        if my_signal:
+            comparison_period_date = my_signal.candle_compare.period_start_timestamp[:10]
+            comparison_period_close = my_signal.candle_compare.period_close
+            simulation_name = my_signal.simulation.name
+            signal = my_signal.signal
+            if my_candle.search_trend:
+                trend_ratio = my_candle.search_trend.trend_ratio
+            else:
+                trend_ratio = None
 
         return_message = {"currency": my_candle.crypto_traded,
                           "currency_quoted": my_candle.currency_quoted,
-                          "date": my_candle.search_trend.date,
+                          "date": my_candle.period_start_timestamp[:10],
                           "timestamp": my_candle.period_start_timestamp,
                           "period_close": my_candle.period_close,
-                          "comparison_period_date": my_signal.candle_compare.search_trend.date,
-                          "comparison_period_close": my_signal.candle_compare.period_close,
-                          "trend_ratio": my_candle.search_trend.trend_ratio,
-                          "simulation_name": my_signal.simulation.name,
-                          "signal": my_signal.signal,
+                          "comparison_period_date": comparison_period_date,
+                          "comparison_period_close": comparison_period_close,
+                          "trend_ratio": trend_ratio,
+                          "simulation_name": simulation_name,
+                          "signal": signal,
                           }
         return return_message
 
