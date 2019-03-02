@@ -39,7 +39,10 @@ def signal(request, simulation_id):
         # currency is required to be given in request.
         if user_currency == "" or simulation_id == None:
             raise TrackException("Please specify a simulation ID and currency in your request.", "Bad Request")
-        my_signal = Signal(currency=user_currency, simulation_id=simulation_id)
+        # user can query 1d or 1h intervals
+        period_interval = request.GET.get('period_interval', '1d')
+
+        my_signal = Signal(currency=user_currency, simulation_id=simulation_id, period_interval=period_interval)
 
         # Get date from request. Date is optional
         user_date = request.GET.get('date', search_date)
@@ -63,7 +66,8 @@ def load_nomics(request):
     except:
         return JsonResponse(bad_request_default)
     else:
-        my_data = CryptoData(currency=query_currency, request=request)
+        period_interval = request.GET.get('period_interval', '1d')
+        my_data = CryptoData(currency=query_currency, request=request, period_interval=period_interval)
         return_message = my_data.get_nomics()
 
     return return_message
@@ -82,32 +86,22 @@ def load_trends(request):
     '''
 
     if request.method == "POST":
-        my_trend = CryptoTrends('buy bitcoin', 'BTC USD')
 
-        end_date = datetime.datetime.now().date()
-        start_date = end_date - datetime.timedelta(days=180)
+        period_interval = request.GET.get('period_interval', '1d')
 
-        # Iterate over a 6 month period because model will aggregate the dates to weekly summary if we try to pull a longer timespan.
-        while end_date.year >= 2013:
-            # We do not need any data before 2013, this is how far our historical data for bitcoin spans.
-            if start_date < datetime.date(2013, 1, 1):
-                start_date = datetime.date(2013, 1, 1)
+        my_trend = CryptoTrends('buy bitcoin', 'BTC USD', period_interval)
 
-            try:
-                # Load google trend data into database.
-                status_message = my_trend.load_model(f"{start_date} {end_date}")
-            except Exception as exc:
-                return JsonResponse({"status_code": 409,
-                                     "status": "Conflict",
-                                     "type": type(exc).__name__,
-                                     "message": exc.__str__()})
-            else:
-                # re-assign start and end dates to shift 6 months backwards.
-                end_date = start_date - datetime.timedelta(days=1)
-                start_date = start_date - datetime.timedelta(days=180)
+        try:
+            status_message = my_trend.load_model()
+        except Exception as exc:
+            return JsonResponse({"status_code": 409,
+                                 "status": "Conflict",
+                                 "type": type(exc).__name__,
+                                 "message": exc.__str__()})
 
-        # whenever we load raw data, we want to update its signal
-        update_candles(request)
+        else:
+            # whenever we load raw data, we want to update its signal
+            update_candles(request)
 
         return JsonResponse({"status_code": 202, "status": status_message})
     else:
@@ -148,6 +142,7 @@ def update_signal(request, simulation_id=""):
         try:
             # initiate variables
             confirm_message = ""
+            period_interval = request.GET.get('period_interval', '1d')
             # Get currency from request
             user_currency = request.GET.get('currency', '')
             # currency is required to be given in request.
@@ -155,7 +150,7 @@ def update_signal(request, simulation_id=""):
                 raise TrackException("Please specify a currency in your request.", "Bad Request")
 
             else:
-                my_signal = Signal(currency=user_currency, simulation_id=simulation_id)
+                my_signal = Signal(currency=user_currency, simulation_id=simulation_id, period_interval=period_interval)
                 # Get prediction days from request (this is necessary only starting with sim id 4)
                 my_signal.prediction_days = int(request.GET.get('days', '90'))
 

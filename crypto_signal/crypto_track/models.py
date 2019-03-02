@@ -10,19 +10,26 @@ class PyTrends(models.Model):
 
     Attributes:
         date (date): date of trend
+        period_interval (str): Time interval of the trend details
         buy_bitcoin (int): score for "buy_bitcoin" search term
         btc_usd (int): score for "btc_usd" search term
         is_partial (bool):
         trend_ratio (dec): ratio of buy_bitcoin/btc_usd
+        update_timestamp (datetime): when record was created in this database
     '''
-    date = models.DateField(primary_key=True)
+    date = models.DateTimeField(primary_key=False)
+    period_interval = models.CharField(max_length=3, default='1d')
     buy_bitcoin = models.IntegerField(null=True)
     btc_usd = models.IntegerField(null=True)
     is_partial = models.BooleanField(default=False)
     trend_ratio = models.DecimalField(max_digits=10, decimal_places=5, null=True)
+    update_timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.date}"
+
+    class Meta:
+        unique_together = (('date', 'period_interval'),)
 
 
 class CryptoCandle(models.Model):
@@ -47,7 +54,7 @@ class CryptoCandle(models.Model):
     period_interval = models.CharField(max_length=3)
     period_start_timestamp = models.CharField(max_length=50)
     search_trend = models.ForeignKey(PyTrends,
-                                     to_field='date',
+                                     # to_field='date',
                                      on_delete=models.SET_NULL,
                                      null=True
                                      )
@@ -57,7 +64,7 @@ class CryptoCandle(models.Model):
     period_high = models.DecimalField(max_digits=25, decimal_places=10)
     period_volume = models.DecimalField(max_digits=25, decimal_places=10)
     data_source = models.CharField(max_length=255)
-    update_timestamp = models.DateTimeField(default=timezone.now())
+    update_timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.crypto_traded} | {self.period_start_timestamp} | {self.data_source} | Period Close: {self.period_close}"
@@ -102,6 +109,9 @@ class SignalSimulation(models.Model):
     def __str__(self):
         return f"{self.crypto_candle} | {self.simulation} | {self.signal}"
 
+    class Meta:
+        unique_together = (('crypto_candle', 'simulation'),)
+
 
 class Bank(models.Model):
     '''
@@ -122,6 +132,9 @@ class Bank(models.Model):
 
     def __str__(self):
         return f"{self.signal_simulation} | {self.user} | Crypto Bank: {self.crypto_bank} | Cash Bank: {self.cash_bank}"
+
+    class Meta:
+        unique_together = (('signal_simulation', 'user'),)
 
 
 class CryptoProphet(models.Model):
@@ -153,7 +166,7 @@ class CryptoProphet(models.Model):
     upper = models.DecimalField(max_digits=25, decimal_places=10, null=True)
     lower = models.DecimalField(max_digits=25, decimal_places=10, null=True)
     change = models.DecimalField(max_digits=25, decimal_places=10, null=True)
-    update_timestamp = models.DateTimeField(default=timezone.now())
+    update_timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.object_type} | {self.date} | {self.crypto_traded} | {self.simulation}"

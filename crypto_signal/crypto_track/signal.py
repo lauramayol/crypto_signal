@@ -112,7 +112,8 @@ class Signal():
 
         # Next, delete the existing simulation
         SignalSimulation.objects.filter(simulation=self.simulation_obj,
-                                        crypto_candle__crypto_traded=self.currency).delete()
+                                        crypto_candle__crypto_traded=self.currency,
+                                        crypto_candle__period_interval=self.period_interval).delete()
 
         # The only time we want to see the future first is when we are determining hindsight simulations.
         if self.simulation_id in [2, 4, 5]:

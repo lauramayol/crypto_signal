@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 import datetime
+import pandas as pd
+from pandas.io.json import json_normalize
 
 
 class CryptoData():
@@ -45,9 +47,17 @@ class CryptoData():
         # Read API
         historical_crypto_results = requests.get(final_url).json()
 
+        # Convert to dataframe so we can get the min date value
+        historical_df = json_normalize(historical_crypto_results)
+        # Get the datetime value of the first candle that Nomics has sent us.
+        first_candle = historical_df.timestamp.min()
+
+        #first_candle = pd.to_datetime(first_candle, errors='coerce')
+
         CryptoCandle.objects.filter(crypto_traded=self.currency,
                                     currency_quoted=self.currency_quoted,
-                                    period_interval=self.period_interval).delete()
+                                    period_interval=self.period_interval,
+                                    period_start_timestamp__gte=first_candle).delete()
         x = 0
         for record in historical_crypto_results:
             try:
@@ -87,6 +97,9 @@ class CryptoData():
         if var_value:
             url_og += f"&{var_name}={var_value}"
 
+            if var_value in ['start', 'end']:
+                url_og += 'T00%3A00%3A00Z'
+
         return url_og
 
     def append_trend_dates(self, candle):
@@ -95,7 +108,10 @@ class CryptoData():
         '''
         date_converted = datetime.datetime.strptime(candle.period_start_timestamp[:10], '%Y-%m-%d')
         try:
-            my_trend = get_object_or_404(PyTrends, pk=date_converted)
+            my_trend = get_object_or_404(PyTrends,
+                                         date=date_converted,
+                                         period_interval=self.period_interval
+                                         )
         except:
             return False
         else:

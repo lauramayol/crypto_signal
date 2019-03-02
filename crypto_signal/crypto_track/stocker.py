@@ -825,7 +825,7 @@ class Prophet():
 class Stocker(Prophet):
 
     # Initialization requires a ticker symbol
-    def __init__(self, ticker, source='Nomics', currency_quoted = 'USD'):
+    def __init__(self, ticker, period_interval='1d', source='Nomics', currency_quoted = 'USD'):
 
         # Enforce capitalization
         ticker = ticker.upper()
@@ -836,7 +836,7 @@ class Stocker(Prophet):
 
         # Retrieval the financial data
         # first, initialize variables
-        self.period_interval = '1d'
+        self.period_interval = period_interval
         self.currency_quoted = currency_quoted
         self.source = source
         try:
