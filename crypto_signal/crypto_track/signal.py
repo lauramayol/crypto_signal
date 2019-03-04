@@ -132,18 +132,10 @@ class Signal():
                 my_sim.save()
 
             else:
-                days_diff = 0
-                if candle.search_trend and prior_candle.search_trend:
-                    candle_delta = candle.search_trend.date - prior_candle.search_trend.date
-                    days_diff = candle_delta.days
-
-                # below i want to make sure my delta is working along with my period interval. This will need to be updated once we introduce hourly intervals.
-                if ((self.period_interval == "1d" and days_diff == 1) or self.simulation_id in [2, 4, 5]):
-
-                    sim_result = self.calculate_signal(candle, prior_candle)
-                    # counting our success instances
-                    if sim_result:
-                        x += 1
+                sim_result = self.calculate_signal(candle, prior_candle)
+                # counting our success instances
+                if sim_result:
+                    x += 1
             prior_candle = candle
 
         # Once we have updated all signals, we can model transaction history.

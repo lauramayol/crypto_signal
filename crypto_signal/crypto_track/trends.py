@@ -37,7 +37,7 @@ class CryptoTrends:
         '''
         df = self.get_trends(period)
         for index, row in df.iterrows():
-            trend_record = PyTrends(date=timezone.make_aware(index,timezone='GMT-4'),
+            trend_record = PyTrends(date=timezone.make_aware(index, timezone=pytz.timezone('UTC')),
                                     period_interval=self.period_interval,
                                     buy_bitcoin=row[self.search_val1],
                                     btc_usd=row[self.search_val2],
@@ -51,11 +51,15 @@ class CryptoTrends:
     def load_model(self, initial_start_date=None, initial_end_date=timezone.now().date()):
 
         # initialize variables for initial period we will load.
-        end_date = initial_end_date
         start_date = initial_start_date
+        # If end_date is in the future, we adjust to today.
+        if initial_end_date > timezone.now().date():
+            end_date = timezone.now().date()
+        else:
+            end_date = initial_end_date
 
+        # For daily candles, we will load 180 days of trends at a time, ending at 1/1/2013, which is the length of time we have candle data for.
         if self.period_interval == '1d':
-            # For daily candles, we will load 180 days of trends at a time, ending at 1/1/2013, which is the length of time we have candle data for.
             start_date = start_date or datetime.date(2013, 1, 1)
             step_days = 180
             start_append = ''
@@ -63,37 +67,35 @@ class CryptoTrends:
         elif self.period_interval == '1h':
             # For hourly candles, we will load 7 days of trends at a time, ending with 30 days from today, which is the length of time we have candle data for.
             start_date = start_date or (end_date - timezone.timedelta(days=30))
-            step_days = 6
+            step_days = 7
             start_append = 'T0'
-            # If end_date is today or in the future, we end parameter with current hour.
-            if end_date >= timezone.now().date():
-                end_append = 'T' + str(timezone.now().hour)
-            else:
-                end_append = 'T23'
+            end_append = 'T23'
 
         step_interval = timezone.timedelta(days=step_days)
 
         interval_start_date = end_date - step_interval
 
-        #print('before UTC', start_date)
-        #start_date = timezone.make_aware(start_date)
-        #print('after UTC', start_date)
         PyTrends.objects.filter(date__gte=start_date,
                                 date__lt=end_date + timezone.timedelta(days=1),
                                 period_interval=self.period_interval).delete()
         # Iterate over a 6 month period because model will aggregate the dates to weekly summary if we try to pull a longer timespan.
         while end_date >= start_date:
-            # We do not need any data before 2013, this is how far our historical data for bitcoin spans.
+            # Check if we are on the last loop
             if interval_start_date < start_date:
-                interval_start_date = start_date
+                # We do not need daily data before 2013, this is how far our historical data for bitcoin spans.
+                if self.period_interval == '1d':
+                    interval_start_date = start_date
+                # We want to keep 7 day intervals even if it goes past start_date because Google Trends would break it down into minutes and screw up our data.
+                elif self.period_interval == '1h':
+                    PyTrends.objects.filter(date__gte=interval_start_date,
+                                            date__lt=start_date,
+                                            period_interval=self.period_interval).delete()
+
             # Load google trend data into database.
             status_message = self.load_single_period(f"{interval_start_date}{start_append} {end_date}{end_append}")
-            # Moving forward we will end our period at the end of the day.
-            if self.period_interval == '1h':
-                end_append = 'T23'
 
             # re-assign start and end dates to shift based on step_interval, backwards.
             end_date = interval_start_date - timezone.timedelta(days=1)
-            interval_start_date = interval_start_date - step_interval
+            interval_start_date += -1 * step_interval
 
         return status_message

@@ -114,11 +114,12 @@ def update_candles(request):
         sample: PATCH localhost:8000/update/candles?currency=BTC
     '''
     query_currency = request.GET.get('currency', '')
+    period_interval = request.GET.get('period_interval', '1d')
 
     if request.method in ("POST", "PATCH"):
         x = 0
         for candle in CryptoCandle.objects.all():
-            my_data = CryptoData(currency=query_currency, request=request)
+            my_data = CryptoData(currency=query_currency, request=request, period_interval=period_interval)
             find_trend = my_data.append_trend_dates(candle)
             if find_trend:
                 x += 1

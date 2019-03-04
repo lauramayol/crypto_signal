@@ -18,7 +18,7 @@ import matplotlib
 # Contains a number of visualizations and analysis methods
 class Prophet():
         # Initialization requires a dataframe with a date named "ds" at index 0 and value "y" to be predicted.
-    def __init__(self, df_history, value_title='value'):
+    def __init__(self, df_history, value_title='value', period_interval='1d'):
         # Set the index to a column called Date
         df_history = df_history.reset_index(level=0)
         df_history['Date'] = df_history['ds']
@@ -26,7 +26,8 @@ class Prophet():
         self.df_history = df_history
         self.value_title = value_title
 
-
+        self.period_interval=period_interval
+        self.freq = self.period_interval[1:2].upper()
 
         # Minimum and maximum date in range
         self.min_date = min(df_history['ds'])
@@ -51,6 +52,12 @@ class Prophet():
 
         # Number of years of data to train on
         self.training_years = 3
+
+        if self.period_interval=='1d':
+            self.period_offset = pd.DateOffset(years=self.training_years)
+        # training_years should specify weeks instead for hourly.
+        elif self.period_interval=='1h':
+            self.period_offset = pd.DateOffset(days=self.training_years*7)
 
         # Prophet parameters
         # Default prior from library
@@ -309,7 +316,7 @@ class Prophet():
     def changepoint_prior_analysis(self, changepoint_priors=[0.001, 0.05, 0.1, 0.2], colors=['b', 'r', 'grey', 'gold']):
 
         # Training and plotting with specified years of data
-        train = self.df_history[(self.df_history['Date'] > (max(self.df_history['Date']) - pd.DateOffset(years=self.training_years)))]
+        train = self.df_history[(self.df_history['Date'] > (max(self.df_history['Date']) - self.period_offset))]
 
         # Iterate through all the changepoints and make models
         for i, prior in enumerate(changepoint_priors):
@@ -319,7 +326,8 @@ class Prophet():
             # Create and train a model with the specified cps
             model = self.create_model()
             model.fit(train)
-            future = model.make_future_dataframe(periods=180, freq='D')
+
+            future = model.make_future_dataframe(periods=180, freq=self.freq)
 
             # Make a dataframe to hold predictions
             if i == 0:
@@ -412,7 +420,7 @@ class Prophet():
 
         # Training data starts self.training_years years before start date and goes up to start date
         train = self.df_history[(self.df_history['Date'] < start_date) &
-                           (self.df_history['Date'] > (start_date.date() - pd.DateOffset(years=self.training_years)))]
+                           (self.df_history['Date'] > (start_date.date() - self.period_offset))]
 
         # Testing data is specified in the range
         test = self.df_history[(self.df_history['Date'] >= start_date) & (self.df_history['Date'] <= end_date)]
@@ -422,7 +430,7 @@ class Prophet():
         model.fit(train)
 
         # Make a future dataframe and predictions
-        future = model.make_future_dataframe(periods = 365, freq='D')
+        future = model.make_future_dataframe(periods = 365, freq=self.freq)
         future = model.predict(future)
 
         # Merge predictions with the known values
@@ -648,7 +656,7 @@ class Prophet():
 
     def predict_future_df(self, days=30, resample=False):
         # Use past self.training_years years for training
-        history = self.df_history[self.df_history['Date'] > (self.max_date - pd.DateOffset(years=self.training_years))]
+        history = self.df_history[self.df_history['Date'] > (self.max_date - self.period_offset)]
 
         if resample:
             history = self.resample(history)
@@ -658,7 +666,7 @@ class Prophet():
         model.fit(history)
 
         # Future dataframe with specified number of days to predict
-        future = model.make_future_dataframe(periods=days, freq='D')
+        future = model.make_future_dataframe(periods=days, freq=self.freq)
         future = model.predict(future)
 
         # Calculate whether increase or not
@@ -746,7 +754,7 @@ class Prophet():
         start_date, end_date = self.handle_dates(start_date, end_date)
 
         # Select self.training_years number of years
-        train = self.df_history[(self.df_history['Date'] > (start_date - pd.DateOffset(years=self.training_years))) &
+        train = self.df_history[(self.df_history['Date'] > (start_date - self.period_offset)) &
         (self.df_history['Date'] < start_date)]
 
         # Testing data is specified by range
@@ -771,7 +779,7 @@ class Prophet():
             # Create and train a model with the specified cps
             model = self.create_model()
             model.fit(train)
-            future = model.make_future_dataframe(periods=eval_days, freq='D')
+            future = model.make_future_dataframe(periods=eval_days, freq=self.freq)
 
             future = model.predict(future)
 
@@ -836,14 +844,13 @@ class Stocker(Prophet):
 
         # Retrieval the financial data
         # first, initialize variables
-        self.period_interval = period_interval
         self.currency_quoted = currency_quoted
         self.source = source
         try:
             # simulation_id = 4 is prophet simulation
             my_candle = CryptoCandle.objects.filter(crypto_traded=self.symbol,
                                                     currency_quoted=self.currency_quoted,
-                                                    period_interval=self.period_interval,
+                                                    period_interval=period_interval,
                                                     data_source__contains=self.source
                                                          )
             stock = pd.DataFrame(list(my_candle.values()))
@@ -868,7 +875,7 @@ class Stocker(Prophet):
         title = f"{self.symbol} ($)"
 
         # Initialize Prophet object
-        Prophet.__init__(self, self.stock, title)
+        Prophet.__init__(self, self.stock, title, period_interval)
 
 
         print('{} Stocker Initialized. Data covers {} to {}.'.format(self.symbol,

@@ -5,6 +5,7 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+import pytz
 import datetime
 import pandas as pd
 from pandas.io.json import json_normalize
@@ -106,12 +107,23 @@ class CryptoData():
         '''
             Appends foreign key of PyTrends unto Candle instance.
         '''
-        date_converted = datetime.datetime.strptime(candle.period_start_timestamp[:10], '%Y-%m-%d')
+
+        date_converted = datetime.datetime.strptime(candle.period_start_timestamp[:19], '%Y-%m-%dT%H:%M:%S')
+
         try:
-            my_trend = get_object_or_404(PyTrends,
-                                         date=date_converted,
-                                         period_interval=self.period_interval
-                                         )
+            # For daily candles we will strip the time and join on date().
+            if self.period_interval == '1d':
+                my_trend = get_object_or_404(PyTrends,
+                                             date__date=date_converted.date(),
+                                             period_interval=self.period_interval
+                                             )
+            # For hourly candles we will adjust candle timezone from local Eastern because it is based on where you are pulling data.
+            elif self.period_interval == '1h':
+                my_trend = get_object_or_404(PyTrends,
+                                             date=timezone.make_aware(date_converted, timezone=pytz.timezone('UTC')),
+                                             period_interval=self.period_interval
+                                             )
+
         except:
             return False
         else:
