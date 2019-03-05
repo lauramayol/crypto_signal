@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 
 
 class BankTransaction():
-    def __init__(self, candle_data, simulation, currency):
+    def __init__(self, candle_data, simulation, currency, period_interval):
         '''
             Attributes (required)
             candle_data (CryptoCandle QuerySet): This is the subset we will use to create bank simulations. This will be useful when creating different Transaction Histories for the same simulations but with different dates and/or users.
@@ -15,6 +15,7 @@ class BankTransaction():
         self.candle_data = candle_data
         self.simulation = simulation
         self.currency = currency
+        self.period_interval = period_interval
 
     def transaction_history(self, trader_name="admin"):
         '''
@@ -29,7 +30,8 @@ class BankTransaction():
         # delete if bank object already exists, then re-create.
         Bank.objects.filter(signal_simulation__simulation=self.simulation,
                             user=trader,
-                            signal_simulation__crypto_candle__crypto_traded=self.currency
+                            signal_simulation__crypto_candle__crypto_traded=self.currency,
+                            signal_simulation__crypto_candle__period_interval=self.period_interval
                             ).delete()
 
         for candle in self.candle_data.order_by('period_start_timestamp'):

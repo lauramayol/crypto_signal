@@ -155,7 +155,7 @@ class CryptoProphet(models.Model):
             update_timestamp (datetime): when record was created in this database
 
     '''
-    date = models.DateField()
+    date = models.DateTimeField()
     object_type = models.CharField(max_length=50)
     simulation = models.ForeignKey(Simulation, on_delete=models.CASCADE)
     crypto_candle = models.ForeignKey(CryptoCandle, on_delete=models.CASCADE, null=True)

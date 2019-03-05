@@ -1,6 +1,7 @@
 import pandas as pd
 from crypto_track.models import PyTrends, CryptoCandle, SignalSimulation, Simulation, Bank, CryptoProphet
 from django.apps import apps
+import csv
 
 
 class DataExport():
@@ -28,7 +29,6 @@ class DataExport():
         qs = my_model.objects.all().values()
         if model_name == 'CryptoProphet':
             qs.filter(change='NaN').update(change=0)
-        print(my_model)
         model_data = list(qs)
         df = pd.DataFrame(model_data)
         if model_name == 'PyTrends':
@@ -40,7 +40,7 @@ class DataExport():
         #     df.index = df.date
         # else:
         #     df.index = df.id
-        df.to_csv(file_name, quoting=3)
+        df.to_csv(file_name, quoting=csv.QUOTE_NONNUMERIC)
         return f"Successfully saved file {file_name}."
 
     def export_all(self):

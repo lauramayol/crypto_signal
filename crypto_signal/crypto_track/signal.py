@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from crypto_track.transaction import BankTransaction
 from crypto_track.stocker import Stocker
-import pandas
+import pandas as pd
 
 
 class Signal():
@@ -139,7 +139,9 @@ class Signal():
             prior_candle = candle
 
         # Once we have updated all signals, we can model transaction history.
-        transaction_sim = BankTransaction(self.candle_subset, self.simulation_obj, self.currency)
+        transaction_sim = BankTransaction(self.candle_subset, self.simulation_obj, self.currency,
+                                          self.period_interval
+                                          )
         transaction_sim.transaction_history()
 
         return f"Inserted {x} signal records on {timezone.now()}.{conditional_message}"
@@ -252,12 +254,22 @@ class Signal():
 
     def predict_price(self):
         # Initialize Stocker object
-        crypto_stocker = Stocker(ticker=self.currency, currency_quoted=self.currency_quoted)
+        crypto_stocker = Stocker(ticker=self.currency, period_interval=self.period_interval, currency_quoted=self.currency_quoted)
 
         # Change defaults as analyzed in Stocker Prediction Usage.ipynb notebook.
-        crypto_stocker.training_years = 6
-        crypto_stocker.weekly_seasonality = True
-        crypto_stocker.changepoint_prior_scale = 0.4
+        if self.period_interval == '1d':
+            crypto_stocker.training_years = 6
+            crypto_stocker.weekly_seasonality = True
+            crypto_stocker.changepoint_prior_scale = 0.4
+
+        elif self.period_interval == '1h':
+            crypto_stocker.yearly_seasonality = False
+            crypto_stocker.monthly_seasonality = True
+            crypto_stocker.weekly_seasonality = True
+            crypto_stocker.daily_seasonality = True
+            crypto_stocker.training_years = 5
+            crypto_stocker.changepoint_prior_scale = 0.1
+
         # Create predictions
         future, train, model = crypto_stocker.predict_future_df(self.prediction_days)
 
@@ -271,17 +283,20 @@ class Signal():
             Loads given pandas dataframe (df) into CryptoProphet model in database.
         '''
 
+        # Delete if unique record exists
+        CryptoProphet.objects.filter(
+            object_type=object_type,
+            simulation=self.simulation_obj,
+            crypto_traded=self.currency,
+            currency_quoted=self.currency_quoted,
+            period_interval=self.period_interval
+        ).delete()
+
         # Loop through data to create database record,
         for index, row in df.iterrows():
-            # Delete if unique record exists
-            CryptoProphet.objects.filter(
-                date=row['ds'],
-                object_type=object_type,
-                simulation=self.simulation_obj,
-                crypto_traded=self.currency,
-                currency_quoted=self.currency_quoted,
-                period_interval=self.period_interval
-            ).delete()
+
+            row['ds'] = pd.to_datetime(row['ds'], errors='coerce')
+
             # Check to see if we have an existing CryptoCandle object so we can reference with ForeignKey
             try:
                 candle = CryptoCandle.objects.get(
