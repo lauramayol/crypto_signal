@@ -53,12 +53,6 @@ class Prophet():
         # Number of years of data to train on
         self.training_years = 3
 
-        if self.period_interval=='1d':
-            self.period_offset = pd.DateOffset(years=self.training_years)
-        # training_years should specify weeks instead for hourly.
-        elif self.period_interval=='1h':
-            self.period_offset = pd.DateOffset(days=self.training_years*7)
-
         # Prophet parameters
         # Default prior from library
         self.changepoint_prior_scale = 0.05
@@ -70,6 +64,15 @@ class Prophet():
 
         print('Prophet Initialized. Data covers {} to {}.'.format(self.min_date.date(),
                                                                      self.max_date.date()))
+
+    @property
+    def period_offset(self):
+        if self.period_interval=='1d':
+            po =  pd.DateOffset(years=self.training_years)
+        # training_years should specify weeks instead for hourly.
+        elif self.period_interval=='1h':
+            po = pd.DateOffset(days=self.training_years*7)
+        return po
 
     """
     Make sure start and end dates are in the range and can be
